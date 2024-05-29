@@ -128,6 +128,8 @@ AVAIL_GEN_BENCHMARKS = {
     "tiny-gen": TINY_GEN,
     "tiny-gen-rgoal": TINY_GEN_RGOAL,
     "small-gen": SMALL_GEN,
+    "small-gen-las": SMALL_GEN_LAS,
+    "small-gen-las-2": SMALL_GEN_LAS_2,
     "small-gen-rgoal": SMALL_GEN_RGOAL,
     "medium-gen": MEDIUM_GEN,
     "large-gen": LARGE_GEN,
