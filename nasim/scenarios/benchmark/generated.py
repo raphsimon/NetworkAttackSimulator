@@ -105,6 +105,23 @@ POCP_2_GEN = {**DEFAULTS,
               "num_processes": 3,
               "restrictiveness": 5,
               "step_limit": 30000}
+SMALL_GEN_LAS = {**DEFAULTS,
+                  "name": "small-gen-las",
+                  "num_hosts": 8,
+                  "num_os": 3,
+                  "num_services": 10,
+                  "num_exploits": 30,
+                  "num_processes": 9,
+                  "restrictiveness": 2,
+                  "step_limit": 4000}
+SMALL_GEN_LAS_2 = {**DEFAULTS,
+                  "name": "small-gen-las-2",
+                  "num_hosts": 8,
+                  "num_os": 3,
+                  "num_services": 10,
+                  "num_exploits": 30,
+                  "restrictiveness": 2,
+                  "step_limit": 4000}
 
 
 AVAIL_GEN_BENCHMARKS = {
