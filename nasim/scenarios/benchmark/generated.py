@@ -39,7 +39,8 @@ TINY_GEN = {**DEFAULTS,
             "num_os": 1,
             "num_services": 1,
             "num_processes": 1,
-            "restrictiveness": 1}
+            "restrictiveness": 1,
+            "step_limit": 100}
 TINY_GEN_RGOAL = {**DEFAULTS,
                   "name": "tiny-gen-rangoal",
                   "num_hosts": 3,
@@ -54,7 +55,8 @@ SMALL_GEN = {**DEFAULTS,
              "num_os": 2,
              "num_services": 3,
              "num_processes": 2,
-             "restrictiveness": 2}
+             "restrictiveness": 2,
+             "step_limit": 500}
 SMALL_GEN_RGOAL = {**DEFAULTS,
                    "name": "small-gen-rangoal",
                    "num_hosts": 8,
@@ -70,7 +72,7 @@ MEDIUM_GEN = {**DEFAULTS,
               "num_services": 5,
               "num_processes": 2,
               "restrictiveness": 3,
-              "step_limit": 2000}
+              "step_limit": 1500}
 LARGE_GEN = {**DEFAULTS,
              "name": "large-gen",
              "num_hosts": 23,
@@ -78,7 +80,7 @@ LARGE_GEN = {**DEFAULTS,
              "num_services": 7,
              "num_processes": 3,
              "restrictiveness": 3,
-             "step_limit": 5000}
+             "step_limit": 2150}
 HUGE_GEN = {**DEFAULTS,
             "name": "huge-gen",
             "num_hosts": 38,
