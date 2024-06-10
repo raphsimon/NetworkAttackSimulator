@@ -422,9 +422,10 @@ class NASimEnv(gym.Env):
         assert isinstance(self.action_space, FlatActionSpace), \
             "Can only use action mask function when using flat action space"
         mask = np.zeros(self.action_space.n, dtype=np.int64)
+        # Note: There certainly is a more efficient way of doing this.
         for a_idx in range(self.action_space.n):
             action = self.action_space.get_action(a_idx)
-            if self.network.host_discovered(action.target):
+            if self.current_state.get_host(action.target).discovered:
                 mask[a_idx] = 1
         return mask
 
