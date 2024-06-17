@@ -410,7 +410,8 @@ class NASimEnv(gym.Env):
         return self.network.get_minimal_hops()
 
     def get_action_mask(self):
-        """Get a vector mask for valid actions.
+        """Get a vector mask for valid actions. The mask is based on whether
+        a host has been discovered or not.
 
         Returns
         -------
@@ -428,6 +429,33 @@ class NASimEnv(gym.Env):
             if self.current_state.get_host(action.target).discovered:
                 mask[a_idx] = 1
         return mask
+    
+    def action_masks(self):
+        """Get a vector mask for valid actions. The mask is based on whether
+        a host has been discovered or not.
+
+        Returns
+        -------
+        ndarray
+            numpy vector of 1's and 0's, one for each action. Where an
+            index will be 1 if action is valid given current state, or
+            0 if action is invalid.
+        """
+        assert isinstance(self.action_space, FlatActionSpace), \
+            "Can only use action mask function when using flat action space"
+
+        # Create a list of bools telling is uf host i has been discovered
+        discovered = [h[1].discovered for h in self.current_state.hosts]
+        num_actions_per_host = self.action_space.n / len(discovered)
+
+        assert self.action_space.n / num_actions_per_host == len(discovered), \
+            "Hosts don't all have the same amout of actions"
+
+        # Repeat the bool num_actions_per_host times
+        mask = np.repeat(discovered, num_actions_per_host)
+
+        return mask
+
 
     def get_score_upper_bound(self):
         """Get the theoretical upper bound for total reward for scenario.
