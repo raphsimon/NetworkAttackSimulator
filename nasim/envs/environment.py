@@ -79,6 +79,7 @@ class NASimEnv(gym.Env):
         self.fully_obs = fully_obs
         self.flat_actions = flat_actions
         self.flat_obs = flat_obs
+        self.horizon = scenario.step_limit
 
         self.network = Network(scenario)
         self.current_state = State.generate_initial_state(self.network)
@@ -95,7 +96,7 @@ class NASimEnv(gym.Env):
         else:
             obs_shape = self.last_obs.shape()
         obs_low, obs_high = Observation.get_space_bounds(self.scenario)
-        self.observation_space = spaces.Box(
+        self.state_space = self.observation_space = spaces.Box(
             low=obs_low, high=obs_high, shape=obs_shape
         )
 
@@ -171,7 +172,9 @@ class NASimEnv(gym.Env):
             and self.steps >= self.scenario.step_limit
         )
 
-        return obs, reward, done, step_limit_reached, info
+        done = done or step_limit_reached
+
+        return obs, reward, done, info
 
     def generative_step(self, state, action):
         """Run one step of the environment using action in given state.
