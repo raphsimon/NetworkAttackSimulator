@@ -107,6 +107,9 @@ class NASimEnv(gym.Env):
 
         self.steps = 0
 
+    def seed(self, seed):
+        np.random.seed(seed)
+
     def reset(self, *, seed=None, options=None):
         """Reset the state of the environment and returns the initial state.
 
