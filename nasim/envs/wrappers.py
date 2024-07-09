@@ -29,12 +29,27 @@ class StackedObsWrapper(gym.Wrapper):
         obs, reward, terminated, truncated, info = self.env.step(action)
 
         stacked_obs = np.maximum(self.last_obs, obs) # We overlay
-        # We keep the auxiliary information from obs because we don't want to stack it
+        # We keep the auxiliary information from obs because 
+        # we don't want to stack it
         stacked_obs[-self.host_vec_len:] = obs[-self.host_vec_len:]
-        self.last_obs = obs # Update last_obs
+        self.last_obs = stacked_obs # Update last_obs
 
         return stacked_obs, reward, terminated, truncated, info
 
     def render(self):
         # Modify the render method if needed
         return self.env.render()
+    
+
+class EmptyInfoWrapper(gym.Wrapper):
+    """We use this wrapper to only return an empty dictionary as the info
+    about the environment. This is done because the information contained
+    in the dictionary is variable. This wrapper was specifically written
+    for the Tianshou library.
+    """
+    def __init__(self, env):
+        super(EmptyInfoWrapper, self).__init__(env)
+
+    def step(self, action):
+        obs, reward, done, truncated, info = self.env.step(action)
+        return obs, reward, done, truncated, {}
