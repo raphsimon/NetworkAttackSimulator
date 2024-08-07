@@ -56,10 +56,22 @@ class StochasticEpisodeStarts(gym.Wrapper):
         super().__init__(env)
 
         self.envs_buffer = [make_benchmark(self.name, fully_obs=self.fully_obs)
-                            for i in range(num_envs)]
+                            for _ in range(num_envs)]
         
-    def reset(self, **kwargs):
-        # Modify the reset method if needed
-        obs, info = self.env.reset(**kwargs)
-        # Perform any additional processing on obs or info
-        return obs, info
+    def reset(self, *, seed=None, options=None):
+        super().reset(seed=seed, options=options)
+        self.steps = 0
+        new_env = np.random.choice(self.envs_buffer)
+        # Map over important objects
+        self.network = new_env.unwrapped.network
+        self.current_state = new_env.unwrapped.current_state
+        self.last_obs = self.current_state.get_initial_observation(
+            self.fully_obs
+        )
+
+        if self.flat_obs:
+            obs = self.last_obs.numpy_flat()
+        else:
+            obs = self.last_obs.numpy()
+
+        return obs, {}
