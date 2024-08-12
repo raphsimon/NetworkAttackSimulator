@@ -42,6 +42,7 @@ docs/_build/
 # data storage from tensorboard
 nasim/agents/runs
 runs/
+models/
 
 .ipynb_checkpoints/
 
