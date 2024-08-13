@@ -87,16 +87,33 @@ class BetterRewardFeedback(gym.Wrapper):
     on getting somehow to the end, and bootstrapping on that.
     """
     def __init__(self, env):
-        super(EmptyInfoWrapper, self).__init__(env)
+        super(BetterRewardFeedback, self).__init__(env)
         # We use a dictionary to track which actions have been successful
         self.action_tracker = {}
 
     def step(self, action):
         obs, reward, done, truncated, info = self.env.step(action)
 
-        if info['Success'] == True:
+        if info['success'] == True:
             if action not in self.action_tracker:
                 reward += 2
                 self.action_tracker[action] = True
 
         return obs, reward, done, truncated, info
+    
+
+if __name__ == '__main__':
+    env = make_benchmark('tiny')
+    env = BetterRewardFeedback(env)
+    env.reset()
+
+    print(env.step(2))
+    print(env.step(1))
+    print(env.step(4))
+    print(env.step(4))
+    print(env.step(5))
+    # Add some more of the same action to check if we really are only giving
+    # the additional reward out once
+    print(env.step(5))
+    print(env.step(5))
+    print(env.step(5))
