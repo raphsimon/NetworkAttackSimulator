@@ -107,7 +107,7 @@ class Network:
 
         discovered = {}
         newly_discovered = {}
-        discovery_reward = 0
+        discovery_reward = 0.0
         target_subnet = action.target[0]
         for h_addr in self.address_space:
             newly_discovered[h_addr] = False

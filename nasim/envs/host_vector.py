@@ -161,11 +161,11 @@ class HostVector:
 
     @property
     def value(self):
-        return self.vector[self._value_idx]
+        return float(self.vector[self._value_idx])
 
     @property
     def discovery_value(self):
-        return self.vector[self._discovery_value_idx]
+        return float(self.vector[self._discovery_value_idx])
 
     @property
     def access(self):
@@ -225,17 +225,17 @@ class HostVector:
         """
         next_state = self.copy()
         if action.is_service_scan():
-            result = ActionResult(True, 0, services=self.services)
+            result = ActionResult(True, 0.0, services=self.services)
             return next_state, result
 
         if action.is_os_scan():
-            return next_state, ActionResult(True, 0, os=self.os)
+            return next_state, ActionResult(True, 0.0, os=self.os)
 
         if action.is_exploit():
             if self.is_running_service(action.service) and \
                (action.os is None or self.is_running_os(action.os)):
                 # service and os is present so exploit is successful
-                value = 0
+                value = 0.0
                 next_state.compromised = True
                 if not self.access == AccessLevel.ROOT:
                     # ensure a machine is not rewarded twice
@@ -255,12 +255,12 @@ class HostVector:
 
         # following actions are on host so require correct access
         if not (self.compromised and action.req_access <= self.access):
-            result = ActionResult(False, 0, permission_error=True)
+            result = ActionResult(False, 0.0, permission_error=True)
             return next_state, result
 
         if action.is_process_scan():
             result = ActionResult(
-                True, 0, access=self.access, processes=self.processes
+                True, 0.0, access=self.access, processes=self.processes
             )
             return next_state, result
 
@@ -292,7 +292,7 @@ class HostVector:
                 return next_state, result
 
         # action failed due to host config not meeting preconditions
-        return next_state, ActionResult(False, 0)
+        return next_state, ActionResult(False, 0.0)
 
     def observe(self,
                 address=False,
