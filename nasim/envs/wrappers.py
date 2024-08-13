@@ -75,3 +75,28 @@ class StochasticEpisodeStarts(gym.Wrapper):
             obs = self.last_obs.numpy()
 
         return obs, {}
+    
+
+class BetterRewardFeedback(gym.Wrapper):
+    """We use this class to provide a better reward feedback to the agent,
+    one that gives the agent a reward of +2 for successful actions but does
+    so only once. This is such that we don't end up in a 'reward hacking'
+    scenario.
+    In the originial scenario, there is no difference in rewards between
+    having a successful action, and a unsuccessful one. So everything relies
+    on getting somehow to the end, and bootstrapping on that.
+    """
+    def __init__(self, env):
+        super(EmptyInfoWrapper, self).__init__(env)
+        # We use a dictionary to track which actions have been successful
+        self.action_tracker = {}
+
+    def step(self, action):
+        obs, reward, done, truncated, info = self.env.step(action)
+
+        if info['Success'] == True:
+            if action not in self.action_tracker:
+                reward += 2
+                self.action_tracker[action] = True
+
+        return obs, reward, done, truncated, info
