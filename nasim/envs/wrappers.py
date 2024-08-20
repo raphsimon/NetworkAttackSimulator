@@ -109,8 +109,10 @@ if __name__ == '__main__':
 
     print(env.step(2))
     print(env.step(1))
+    print("Exploit")
     print(env.step(4))
     print(env.step(4))
+    print("Exploit end")
     print(env.step(5))
     # Add some more of the same action to check if we really are only giving
     # the additional reward out once
