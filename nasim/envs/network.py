@@ -1,7 +1,7 @@
 import numpy as np
 
-from .action import ActionResult
-from .utils import get_minimal_steps_to_goal, min_subnet_depth, AccessLevel
+from nasim.envs.action import ActionResult
+from nasim.envs.utils import get_minimal_steps_to_goal, min_subnet_depth, AccessLevel
 
 # column in topology adjacency matrix that represents connection between
 # subnet and public
@@ -91,7 +91,11 @@ class Network:
             return self._perform_subnet_scan(next_state, action)
 
         t_host = state.get_host(action.target)
-        next_host_state, action_obs = t_host.perform_action(action)
+        if t_host.sensitive:
+            host_value = self.sensitive_hosts.get(action.target, 0)
+        else:
+            host_value = 0
+        next_host_state, action_obs = t_host.perform_action(action, host_value)
         next_state.update_host(action.target, next_host_state)
         self._update(next_state, action, action_obs)
         return next_state, action_obs
@@ -107,7 +111,7 @@ class Network:
 
         discovered = {}
         newly_discovered = {}
-        discovery_reward = 0
+        discovery_reward = 0.0
         target_subnet = action.target[0]
         for h_addr in self.address_space:
             newly_discovered[h_addr] = False

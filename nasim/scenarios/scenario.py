@@ -178,7 +178,7 @@ class Scenario:
         )
 
     @property
-    def host_value_bounds(self):
+    def host_value_bounds(self): # TODO I think this has become irrelevant, remove if true
         """The min and max values of host in scenario
 
         Returns
@@ -189,8 +189,8 @@ class Scenario:
         min_value = math.inf
         max_value = -math.inf
         for host in self.hosts.values():
-            min_value = min(min_value, host.value)
-            max_value = max(max_value, host.value)
+            min_value = min(min_value, host.sensitive)
+            max_value = max(max_value, host.sensii)
         return (min_value, max_value)
 
     @property
@@ -235,7 +235,7 @@ class Scenario:
         return len(self.hosts) * host_states
 
     def get_state_dims(self):
-        # compromised, reachable, discovered, value, discovery_value, access
+        # compromised, reachable, discovered, sensitive, discovery_value, access
         host_aux_features = 6
         host_state_size = (
             self.address_space_bounds[0]

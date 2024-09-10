@@ -33,11 +33,12 @@ actions or not:
 
 """
 
+from dataclasses import dataclass
 import math
 import numpy as np
 from gym import spaces
 
-from .utils import AccessLevel
+from nasim.envs.utils import AccessLevel
 
 
 def load_action_list(scenario):
@@ -537,7 +538,7 @@ class NoOp(Action):
                          prob=1.0,
                          req_access=AccessLevel.NONE)
 
-
+@dataclass
 class ActionResult:
     """A dataclass for storing the results of an Action.
 
@@ -574,59 +575,17 @@ class ActionResult:
     newly_discovered : dict
         host addresses discovered for the first time by action
     """
-
-    def __init__(self,
-                 success,
-                 value=0.0,
-                 services=None,
-                 os=None,
-                 processes=None,
-                 access=None,
-                 discovered=None,
-                 connection_error=False,
-                 permission_error=False,
-                 undefined_error=False,
-                 newly_discovered=None):
-        """
-        Parameters
-        ----------
-        success : bool
-            True if exploit/scan was successful, False otherwise
-        value : float, optional
-            value gained from action (default=0.0)
-        services : dict, optional
-            services identified by action (default=None={})
-        os : dict, optional
-            OS identified by action (default=None={})
-        processes : dict, optional
-            processes identified by action (default=None={})
-        access : dict, optional
-            access gained by action (default=None={})
-        discovered : dict, optional
-            host addresses discovered by action (default=None={})
-        connection_error : bool, optional
-            True if action failed due to connection error (default=False)
-        permission_error : bool, optional
-            True if action failed due to a permission error (default=False)
-        undefined_error : bool, optional
-            True if action failed due to an undefined error (default=False)
-        newly_discovered : dict, optional
-            host addresses discovered for first time by action (default=None)
-        """
-        self.success = success
-        self.value = value
-        self.services = {} if services is None else services
-        self.os = {} if os is None else os
-        self.processes = {} if processes is None else processes
-        self.access = {} if access is None else access
-        self.discovered = {} if discovered is None else discovered
-        self.connection_error = connection_error
-        self.permission_error = permission_error
-        self.undefined_error = undefined_error
-        if newly_discovered is not None:
-            self.newly_discovered = newly_discovered
-        else:
-            self.newly_discovered = {}
+    success: bool
+    value: float = 0.0
+    services: dict = None
+    os: dict = None
+    processes: dict = None
+    access: dict = None
+    discovered: dict = None
+    connection_error: bool = False
+    permission_error: bool = False
+    undefined_error: bool = False
+    newly_discovered: dict = None # Does this change anything if this is dict by default and not None?
 
     def info(self):
         """Get results as dict
@@ -639,14 +598,15 @@ class ActionResult:
         return dict(
             success=self.success,
             value=self.value,
-            services=self.services,
-            os=self.os,
-            processes=self.processes,
-            access=self.access,
-            discovered=self.discovered,
+            services={} if self.services is None else self.services,
+            os={} if self.os is None else self.os,
+            processes={} if self.processes is None else self.processes,
+            access={} if self.access is None else self.access,
+            discovered={} if self.discovered is None else self.discovered,
             connection_error=self.connection_error,
             permission_error=self.permission_error,
-            newly_discovered=self.newly_discovered
+            undefined_error=self.undefined_error,
+            newly_discovered={} if self.newly_discovered is None else self.newly_discovered
         )
 
     def __str__(self):
@@ -696,7 +656,7 @@ class FlatActionSpace(spaces.Discrete):
         """
         assert isinstance(action_idx, (int, np.integer)), \
             ("When using flat action space, action must be an integer"
-             f" or an Action object: {action_idx} is invalid")
+             f" or an Action object. {type(action_idx)} is invalid")
         return self.actions[action_idx]
 
 

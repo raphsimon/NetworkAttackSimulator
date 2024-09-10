@@ -6,8 +6,8 @@ in the NASim environment.
 
 import numpy as np
 
-from .utils import AccessLevel
-from .action import ActionResult
+from nasim.envs.utils import AccessLevel
+from nasim.envs.action import ActionResult
 
 
 class HostVector:
@@ -26,9 +26,9 @@ class HostVector:
     3. compromised - bool
     4. reachable - bool
     5. discovered - bool
-    6. value - float
+    6. sensitive - boolean
     7. discovery value - float
-    8. access - int
+    8. access - one-hot encoding representing the current access on the machine
     9. OS - bool for each OS in scenario (only one OS has value of true)
     10. services running - bool for each service in scenario
     11. processes running - bool for each process in scenario
@@ -72,9 +72,9 @@ class HostVector:
     _compromised_idx = None
     _reachable_idx = None
     _discovered_idx = None
-    _value_idx = None
+    _sensitive_idx = None
     _discovery_value_idx = None
-    _access_idx = None
+    _access_start_idx = None
     _os_start_idx = None
     _service_start_idx = None
     _process_start_idx = None
@@ -99,9 +99,10 @@ class HostVector:
         vector[cls._compromised_idx] = int(host.compromised)
         vector[cls._reachable_idx] = int(host.reachable)
         vector[cls._discovered_idx] = int(host.discovered)
-        vector[cls._value_idx] = host.value
+        vector[cls._sensitive_idx] = host.sensitive
         vector[cls._discovery_value_idx] = host.discovery_value
-        vector[cls._access_idx] = host.access
+        for al in AccessLevel:
+            vector[cls._access_start_idx + al] = int(al == host.access)
         for os_num, (os_key, os_val) in enumerate(host.os.items()):
             vector[cls._get_os_idx(os_num)] = int(os_val)
         for srv_num, (srv_key, srv_val) in enumerate(host.services.items()):
@@ -160,20 +161,24 @@ class HostVector:
         )
 
     @property
-    def value(self):
-        return self.vector[self._value_idx]
+    def sensitive(self):
+        return self.vector[self._sensitive_idx]
 
     @property
     def discovery_value(self):
-        return self.vector[self._discovery_value_idx]
+        return float(self.vector[self._discovery_value_idx])
 
     @property
     def access(self):
-        return self.vector[self._access_idx]
+        # Return the index of the nonzero element from the one-hot encoding.
+        return self.vector[self._access_start_idx:self._os_start_idx].nonzero()[0].item()
 
     @access.setter
     def access(self, val):
-        self.vector[self._access_idx] = int(val)
+        # First, reset the old access level
+        self.vector[self._access_start_idx:self._os_start_idx] = 0
+        # Use the value as an index, to set the flag in the one-hot encoding.
+        self.vector[self._access_start_idx + val] = 1
 
     @property
     def services(self):
@@ -208,7 +213,7 @@ class HostVector:
         proc_num = self.process_idx_map[proc]
         return bool(self.vector[self._get_process_idx(proc_num)])
 
-    def perform_action(self, action):
+    def perform_action(self, action, host_value):
         """Perform given action against this host
 
         Arguments
@@ -225,24 +230,24 @@ class HostVector:
         """
         next_state = self.copy()
         if action.is_service_scan():
-            result = ActionResult(True, 0, services=self.services)
+            result = ActionResult(True, 0.0, services=self.services)
             return next_state, result
 
         if action.is_os_scan():
-            return next_state, ActionResult(True, 0, os=self.os)
+            return next_state, ActionResult(True, 0.0, os=self.os)
 
         if action.is_exploit():
             if self.is_running_service(action.service) and \
                (action.os is None or self.is_running_os(action.os)):
                 # service and os is present so exploit is successful
-                value = 0
+                value = 0.0
                 next_state.compromised = True
                 if not self.access == AccessLevel.ROOT:
                     # ensure a machine is not rewarded twice
                     # and access doesn't decrease
                     next_state.access = action.access
                     if action.access == AccessLevel.ROOT:
-                        value = self.value
+                        value = host_value
 
                 result = ActionResult(
                     True,
@@ -255,12 +260,12 @@ class HostVector:
 
         # following actions are on host so require correct access
         if not (self.compromised and action.req_access <= self.access):
-            result = ActionResult(False, 0, permission_error=True)
+            result = ActionResult(False, 0.0, permission_error=True)
             return next_state, result
 
         if action.is_process_scan():
             result = ActionResult(
-                True, 0, access=self.access, processes=self.processes
+                True, 0.0, access=self.access, processes=self.processes
             )
             return next_state, result
 
@@ -281,7 +286,8 @@ class HostVector:
                     # and access doesn't decrease
                     next_state.access = action.access
                     if action.access == AccessLevel.ROOT:
-                        value = self.value
+                        value = host_value
+
                 result = ActionResult(
                     True,
                     value=value,
@@ -292,7 +298,7 @@ class HostVector:
                 return next_state, result
 
         # action failed due to host config not meeting preconditions
-        return next_state, ActionResult(False, 0)
+        return next_state, ActionResult(False, 0.0)
 
     def observe(self,
                 address=False,
@@ -300,7 +306,7 @@ class HostVector:
                 reachable=False,
                 discovered=False,
                 access=False,
-                value=False,
+                sensitive=False,
                 discovery_value=False,
                 services=False,
                 processes=False,
@@ -317,13 +323,14 @@ class HostVector:
             obs[self._reachable_idx] = self.vector[self._reachable_idx]
         if discovered:
             obs[self._discovered_idx] = self.vector[self._discovered_idx]
-        if value:
-            obs[self._value_idx] = self.vector[self._value_idx]
+        if sensitive:
+            obs[self._sensitive_idx] = self.vector[self._sensitive_idx]
         if discovery_value:
             v = self.vector[self._discovery_value_idx]
             obs[self._discovery_value_idx] = v
         if access:
-            obs[self._access_idx] = self.vector[self._access_idx]
+            idxs = self._access_level_idx_slice()
+            obs[idxs] = self.vector[idxs]
         if os:
             idxs = self._os_idx_slice()
             obs[idxs] = self.vector[idxs]
@@ -371,10 +378,10 @@ class HostVector:
         )
         cls._reachable_idx = cls._compromised_idx + 1
         cls._discovered_idx = cls._reachable_idx + 1
-        cls._value_idx = cls._discovered_idx + 1
-        cls._discovery_value_idx = cls._value_idx + 1
-        cls._access_idx = cls._discovery_value_idx + 1
-        cls._os_start_idx = cls._access_idx + 1
+        cls._sensitive_idx = cls._discovered_idx + 1
+        cls._discovery_value_idx = cls._sensitive_idx + 1
+        cls._access_start_idx = cls._discovery_value_idx + 1
+        cls._os_start_idx = cls._access_start_idx + len(AccessLevel)
         cls._service_start_idx = cls._os_start_idx + cls.num_os
         cls._process_start_idx = cls._service_start_idx + cls.num_services
         cls.state_size = cls._process_start_idx + cls.num_processes
@@ -402,6 +409,10 @@ class HostVector:
     @classmethod
     def _os_idx_slice(cls):
         return slice(cls._os_start_idx, cls._service_start_idx)
+    
+    @classmethod
+    def _access_level_idx_slice(cls):
+        return slice(cls._access_start_idx, cls._os_start_idx)
 
     @classmethod
     def _get_process_idx(cls, proc_num):
@@ -419,7 +430,7 @@ class HostVector:
         readable_dict["Compromised"] = bool(hvec.compromised)
         readable_dict["Reachable"] = bool(hvec.reachable)
         readable_dict["Discovered"] = bool(hvec.discovered)
-        readable_dict["Value"] = hvec.value
+        readable_dict["Sensitive"] = hvec.sensitive
         readable_dict["Discovery Value"] = hvec.discovery_value
         readable_dict["Access"] = hvec.access
         for os_name in cls.os_idx_map:
@@ -428,7 +439,6 @@ class HostVector:
             readable_dict[f"{srv_name}"] = hvec.is_running_service(srv_name)
         for proc_name in cls.process_idx_map:
             readable_dict[f"{proc_name}"] = hvec.is_running_process(proc_name)
-
         return readable_dict
 
     @classmethod

@@ -1,7 +1,7 @@
 import numpy as np
 
-from .host_vector import HostVector
-from .observation import Observation
+from nasim.envs.host_vector import HostVector
+from nasim.envs.observation import Observation
 
 
 class State:
@@ -156,7 +156,7 @@ class State:
             compromised=False,
             reachable=True,     # must be true for success
             discovered=True,    # must be true for success
-            value=False,
+            sensitive=False,
             # discovery_value=False,    # this is only added as needed
             services=False,
             processes=False,
@@ -169,7 +169,7 @@ class State:
             obs_kwargs["services"] = True
             obs_kwargs["os"] = True
             obs_kwargs["access"] = True
-            obs_kwargs["value"] = True
+            obs_kwargs["sensitive"] = True
         elif action.is_privilege_escalation():
             obs_kwargs["compromised"] = True
             obs_kwargs["access"] = True
@@ -197,6 +197,12 @@ class State:
             raise NotImplementedError(f"Action {action} not implemented")
         target_obs = t_host.observe(**obs_kwargs)
         obs.update_from_host(t_idx, target_obs)
+
+        # With the observation rework, we shouldn't expect any values different
+        # from 0 or 1 in the observation.
+        assert np.all(np.isin(obs.numpy(), [0, 1])), \
+            f"Observation contains values different from 0 or 1. Observation:\n{obs}"
+
         return obs
 
     def shape_flat(self):
@@ -247,8 +253,8 @@ class State:
     def set_host_discovered(self, host_addr):
         self.get_host(host_addr).discovered = True
 
-    def get_host_value(self, host_address):
-        return self.hosts[host_address].get_value()
+    def get_host_value(self, host_addr):
+        return self.get_host(host_addr).sensitive * 100 # TODO remove magic number
 
     def host_is_running_service(self, host_addr, service):
         return self.get_host(host_addr).is_running_service(service)
@@ -260,7 +266,7 @@ class State:
         total_value = 0
         for host_addr in self.host_num_map:
             host = self.get_host(host_addr)
-            total_value += host.value
+            total_value += host.sensitive * 100 # TODO remove magic number
         return total_value
 
     def state_size(self):
