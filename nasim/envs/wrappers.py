@@ -55,7 +55,7 @@ class StochasticEpisodeStarts(gym.Wrapper):
     def __init__(self, env, num_envs=1000):
         super().__init__(env)
 
-        self.envs_buffer = [make_benchmark(self.name, fully_obs=self.fully_obs)
+        self.envs_buffer = [make_benchmark(self.unwrapped.name, fully_obs=self.unwrapped.fully_obs)
                             for _ in range(num_envs)]
         
     def reset(self, *, seed=None, options=None):
@@ -66,10 +66,10 @@ class StochasticEpisodeStarts(gym.Wrapper):
         self.network = new_env.unwrapped.network
         self.current_state = new_env.unwrapped.current_state
         self.last_obs = self.current_state.get_initial_observation(
-            self.fully_obs
+            self.unwrapped.fully_obs
         )
 
-        if self.flat_obs:
+        if self.unwrapped.flat_obs:
             obs = self.last_obs.numpy_flat()
         else:
             obs = self.last_obs.numpy()
