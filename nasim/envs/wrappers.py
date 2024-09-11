@@ -3,10 +3,12 @@ import gymnasium as gym
 from nasim import make_benchmark
 
 
-class StackedObsWrapper(gym.Wrapper):
-    """This wrapper is used to stack the observations the agent gets during
-    an episode. The purpose of this is to make the observations pseudo-Markovian
-    since they would contain the history the observations.
+class AggregatedObsWrapper(gym.Wrapper):
+    """This wrapper is used to aggregate the observations the agent gets during
+    an episode. Instead of the observations being the result of the action, we
+    alter the observation to converge towards the state by aggregating all prior
+    observations into a single observation. The idea is basically to keep track
+    of everything we know about the environment within one single observation.
 
     Args:
         gym (_type_): _description_
@@ -16,9 +18,6 @@ class StackedObsWrapper(gym.Wrapper):
 
         self.host_vec_len = len(self.unwrapped.current_state.hosts[0][1].vector)
         self.last_obs, _ = self.reset()
-
-        # TODO Look into keeping just the n last observations. Might have to
-        # use a queue for this.
 
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
@@ -103,19 +102,35 @@ class BetterRewardFeedback(gym.Wrapper):
     
 
 if __name__ == '__main__':
-    env = make_benchmark('tiny')
-    env = BetterRewardFeedback(env)
-    env.reset()
 
-    print(env.step(2))
-    print(env.step(1))
-    print("Exploit")
-    print(env.step(4))
-    print(env.step(4))
-    print("Exploit end")
-    print(env.step(5))
-    # Add some more of the same action to check if we really are only giving
-    # the additional reward out once
-    print(env.step(5))
-    print(env.step(5))
-    print(env.step(5))
+    def get_observation_sequence(env, optimal_actions):
+        env.reset()
+        obs_list = []
+
+        for a in optimal_actions:
+            o, r, d, trunc, info = env.step(a)
+            if info['success'] == False: 
+                # Exploits can fail since they have a success probability
+                # Retry until we succeed
+                keep_trying = True
+                while keep_trying:
+                    o, r, d, trunc, info = env.step(a)
+                    keep_trying = not info['success']
+            print(o, r, d)
+            obs_list.append(o)
+        return obs_list
+
+
+    optimal_actions_tiny = [4, 2, 16, 17, 10, 11]
+
+    print('=' * 30 + ' PO Env ' + '=' * 30)
+    ground_truth_env = gym.make('TinyPO-v0')
+    orig_obs = get_observation_sequence(ground_truth_env, optimal_actions_tiny)
+    
+    print('=' * 30 + ' Aggregated Obs ' + '=' * 30)
+    aggregated_obs_env = AggregatedObsWrapper(ground_truth_env)
+    aggr_obs = get_observation_sequence(aggregated_obs_env, optimal_actions_tiny)
+
+    print('=' * 30 + ' Fully Obs Env ' + '=' * 30)
+    fully_obs_env = gym.make('Tiny-v0')
+    orig_obs = get_observation_sequence(fully_obs_env, optimal_actions_tiny)
