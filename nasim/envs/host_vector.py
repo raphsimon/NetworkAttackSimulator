@@ -28,7 +28,7 @@ class HostVector:
     5. discovered - bool
     6. value - float
     7. discovery value - float
-    8. access - int
+    8. access - one-hot encoding representing the current access on the machine
     9. OS - bool for each OS in scenario (only one OS has value of true)
     10. services running - bool for each service in scenario
     11. processes running - bool for each process in scenario
@@ -74,7 +74,7 @@ class HostVector:
     _discovered_idx = None
     _value_idx = None
     _discovery_value_idx = None
-    _access_idx = None
+    _access_start_idx = None
     _os_start_idx = None
     _service_start_idx = None
     _process_start_idx = None
@@ -99,9 +99,12 @@ class HostVector:
         vector[cls._compromised_idx] = int(host.compromised)
         vector[cls._reachable_idx] = int(host.reachable)
         vector[cls._discovered_idx] = int(host.discovered)
-        vector[cls._value_idx] = host.value
+        vector[cls._value_idx] = host.value # TODO Rework this into a boolean telling
+                                            # us whether it's sensitive or not, and then
+                                            # the reward function does the reset 
         vector[cls._discovery_value_idx] = host.discovery_value
-        vector[cls._access_idx] = host.access
+        for al in AccessLevel:
+            vector[cls._access_start_idx + al] = int(al == host.access)
         for os_num, (os_key, os_val) in enumerate(host.os.items()):
             vector[cls._get_os_idx(os_num)] = int(os_val)
         for srv_num, (srv_key, srv_val) in enumerate(host.services.items()):
@@ -169,11 +172,15 @@ class HostVector:
 
     @property
     def access(self):
-        return self.vector[self._access_idx]
+        # Return the index of the nonzero element from the one-hot encoding.
+        return self.vector[self._access_start_idx:self._os_start_idx].nonzero()[0].item()
 
     @access.setter
     def access(self, val):
-        self.vector[self._access_idx] = int(val)
+        # First, reset the old access level
+        self.vector[self._access_start_idx:self._os_start_idx] = 0
+        # Use the value as an index, to set the flag in the one-hot encoding.
+        self.vector[self._access_start_idx + val] = 1
 
     @property
     def services(self):
@@ -323,7 +330,8 @@ class HostVector:
             v = self.vector[self._discovery_value_idx]
             obs[self._discovery_value_idx] = v
         if access:
-            obs[self._access_idx] = self.vector[self._access_idx]
+            idxs = self._access_level_idx_slice()
+            obs[idxs] = self.vector[idxs]
         if os:
             idxs = self._os_idx_slice()
             obs[idxs] = self.vector[idxs]
@@ -373,8 +381,8 @@ class HostVector:
         cls._discovered_idx = cls._reachable_idx + 1
         cls._value_idx = cls._discovered_idx + 1
         cls._discovery_value_idx = cls._value_idx + 1
-        cls._access_idx = cls._discovery_value_idx + 1
-        cls._os_start_idx = cls._access_idx + 1
+        cls._access_start_idx = cls._discovery_value_idx + 1
+        cls._os_start_idx = cls._access_start_idx + len(AccessLevel)
         cls._service_start_idx = cls._os_start_idx + cls.num_os
         cls._process_start_idx = cls._service_start_idx + cls.num_services
         cls.state_size = cls._process_start_idx + cls.num_processes
@@ -402,6 +410,10 @@ class HostVector:
     @classmethod
     def _os_idx_slice(cls):
         return slice(cls._os_start_idx, cls._service_start_idx)
+    
+    @classmethod
+    def _access_level_idx_slice(cls):
+        return slice(cls._access_start_idx, cls._os_start_idx)
 
     @classmethod
     def _get_process_idx(cls, proc_num):
@@ -428,7 +440,6 @@ class HostVector:
             readable_dict[f"{srv_name}"] = hvec.is_running_service(srv_name)
         for proc_name in cls.process_idx_map:
             readable_dict[f"{proc_name}"] = hvec.is_running_process(proc_name)
-
         return readable_dict
 
     @classmethod
