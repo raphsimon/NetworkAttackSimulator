@@ -44,7 +44,7 @@ def make_benchmark(scenario_name,
     Raises
     ------
     NotImplementederror
-        if scenario_name does no match any implemented benchmark scenarios.
+        if scenario_name does not match any implemented benchmark scenarios.
     """
     env_kwargs = {"fully_obs": fully_obs,
                   "flat_actions": flat_actions,
