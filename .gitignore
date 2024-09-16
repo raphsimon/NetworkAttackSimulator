@@ -47,3 +47,6 @@ models/
 .ipynb_checkpoints/
 
 *.ipynb
+
+.vscode/
+
