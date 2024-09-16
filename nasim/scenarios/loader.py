@@ -226,7 +226,6 @@ class ScenarioLoader:
         self.sensitive_hosts = dict()
         for address, value in sensitive_hosts.items():
             self.sensitive_hosts[eval(address)] = value
-            print("Host address:", address, "Value:", value)
 
     def _validate_sensitive_hosts(self, sensitive_hosts):
         # check sensitive_hosts is valid dict of (subnet, id) : value

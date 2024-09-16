@@ -247,8 +247,8 @@ class HostVector:
                     # and access doesn't decrease
                     next_state.access = action.access
                     if action.access == AccessLevel.ROOT:
+                        # TODO Change this from magic values
                         value = 100.0 if self.sensitive else 0.0
-                        print('Giving reward of', value, 'for exploit')
 
                 result = ActionResult(
                     True,
