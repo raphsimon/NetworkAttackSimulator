@@ -197,6 +197,12 @@ class State:
             raise NotImplementedError(f"Action {action} not implemented")
         target_obs = t_host.observe(**obs_kwargs)
         obs.update_from_host(t_idx, target_obs)
+
+        # With the observation rework, we shouldn't expect any values different
+        # from 0 or 1 in the observation.
+        assert np.all(np.isin(obs, [0, 1])), \
+            "Observation contains values different from 0 or 1."
+
         return obs
 
     def shape_flat(self):
