@@ -473,7 +473,7 @@ class ScenarioGenerator:
                     services=srv_cfg.copy(),
                     processes=proc_cfg.copy(),
                     firewall={},
-                    value=value,
+                    sensitive=True if value else False,
                     discovery_value=self.host_discovery_value
                 )
                 hosts[address] = host
@@ -566,7 +566,7 @@ class ScenarioGenerator:
                     services=service_cfg.copy(),
                     processes=process_cfg.copy(),
                     firewall={},
-                    value=value,
+                    sensitive=True if value else False,
                     discovery_value=self.host_discovery_value
                 )
                 hosts[address] = host

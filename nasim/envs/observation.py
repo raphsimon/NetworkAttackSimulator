@@ -61,16 +61,16 @@ class Observation:
 
     @staticmethod
     def get_space_bounds(scenario):
-        value_bounds = scenario.host_value_bounds
+        # We removed the value as being part of the bounds since it is not
+        # part of the state or observations anymore. It has been replaced
+        # with the 'sensitive' property.
         discovery_bounds = scenario.host_discovery_value_bounds
         obs_low = min(
             0,
-            value_bounds[0],
             discovery_bounds[0]
         )
         obs_high = max(
             1,
-            value_bounds[1],
             discovery_bounds[1],
             AccessLevel.ROOT,
             scenario.address_space_bounds[0],

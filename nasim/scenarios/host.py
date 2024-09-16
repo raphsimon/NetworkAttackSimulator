@@ -13,7 +13,7 @@ class Host:
                  services,
                  processes,
                  firewall,
-                 value=0.0,
+                 sensitive=False,
                  discovery_value=0.0,
                  compromised=False,
                  reachable=False,
@@ -55,7 +55,7 @@ class Host:
         self.services = services
         self.processes = processes
         self.firewall = firewall
-        self.value = value
+        self.sensitive = sensitive
         self.discovery_value = discovery_value
         self.compromised = compromised
         self.reachable = reachable
@@ -79,7 +79,7 @@ class Host:
         output.append(f"\taddress: {self.address}")
         output.append(f"\tcompromised: {self.compromised}")
         output.append(f"\treachable: {self.reachable}")
-        output.append(f"\tvalue: {self.value}")
+        output.append(f"\tsensitive: {self.sensitive}")
         output.append(f"\taccess: {self.access}")
 
         output.append("\tOS: {")

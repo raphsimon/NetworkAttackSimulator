@@ -1,5 +1,6 @@
 import numpy as np
 import gymnasium as gym
+import nasim
 from nasim import make_benchmark
 
 
@@ -54,7 +55,7 @@ class StochasticEpisodeStarts(gym.Wrapper):
     def __init__(self, env, num_envs=1000):
         super().__init__(env)
 
-        self.envs_buffer = [make_benchmark(self.unwrapped.name, fully_obs=self.unwrapped.fully_obs)
+        self.envs_buffer = [nasim.make_benchmark(self.unwrapped.name, fully_obs=self.unwrapped.fully_obs)
                             for _ in range(num_envs)]
         
     def reset(self, *, seed=None, options=None):
@@ -123,14 +124,16 @@ if __name__ == '__main__':
 
     optimal_actions_tiny = [4, 2, 16, 17, 10, 11]
 
+    """
     print('=' * 30 + ' PO Env ' + '=' * 30)
-    ground_truth_env = gym.make('TinyPO-v0')
+    ground_truth_env = nasim.make_benchmark('tiny')
     orig_obs = get_observation_sequence(ground_truth_env, optimal_actions_tiny)
     
     print('=' * 30 + ' Aggregated Obs ' + '=' * 30)
     aggregated_obs_env = AggregatedObsWrapper(ground_truth_env)
     aggr_obs = get_observation_sequence(aggregated_obs_env, optimal_actions_tiny)
+    """
 
     print('=' * 30 + ' Fully Obs Env ' + '=' * 30)
-    fully_obs_env = gym.make('Tiny-v0')
+    fully_obs_env = make_benchmark('tiny', fully_obs=True)
     orig_obs = get_observation_sequence(fully_obs_env, optimal_actions_tiny)

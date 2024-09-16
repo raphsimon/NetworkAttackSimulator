@@ -226,6 +226,7 @@ class ScenarioLoader:
         self.sensitive_hosts = dict()
         for address, value in sensitive_hosts.items():
             self.sensitive_hosts[eval(address)] = value
+            print("Host address:", address, "Value:", value)
 
     def _validate_sensitive_hosts(self, sensitive_hosts):
         # check sensitive_hosts is valid dict of (subnet, id) : value
@@ -553,7 +554,7 @@ class ScenarioLoader:
                 services=srv_cfg,
                 processes=proc_cfg,
                 firewall=h_cfg[u.HOST_FIREWALL],
-                value=value
+                sensitive=False if not value else True
             )
         self.hosts = hosts
 

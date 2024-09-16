@@ -26,7 +26,7 @@ class HostVector:
     3. compromised - bool
     4. reachable - bool
     5. discovered - bool
-    6. value - float
+    6. sensitive - boolean
     7. discovery value - float
     8. access - one-hot encoding representing the current access on the machine
     9. OS - bool for each OS in scenario (only one OS has value of true)
@@ -72,7 +72,7 @@ class HostVector:
     _compromised_idx = None
     _reachable_idx = None
     _discovered_idx = None
-    _value_idx = None
+    _sensitive_idx = None
     _discovery_value_idx = None
     _access_start_idx = None
     _os_start_idx = None
@@ -99,9 +99,7 @@ class HostVector:
         vector[cls._compromised_idx] = int(host.compromised)
         vector[cls._reachable_idx] = int(host.reachable)
         vector[cls._discovered_idx] = int(host.discovered)
-        vector[cls._value_idx] = host.value # TODO Rework this into a boolean telling
-                                            # us whether it's sensitive or not, and then
-                                            # the reward function does the reset 
+        vector[cls._sensitive_idx] = host.sensitive
         vector[cls._discovery_value_idx] = host.discovery_value
         for al in AccessLevel:
             vector[cls._access_start_idx + al] = int(al == host.access)
@@ -163,8 +161,8 @@ class HostVector:
         )
 
     @property
-    def value(self):
-        return float(self.vector[self._value_idx])
+    def sensitive(self):
+        return self.vector[self._sensitive_idx]
 
     @property
     def discovery_value(self):
@@ -249,7 +247,8 @@ class HostVector:
                     # and access doesn't decrease
                     next_state.access = action.access
                     if action.access == AccessLevel.ROOT:
-                        value = self.value
+                        value = 100.0 if self.sensitive else 0.0
+                        print('Giving reward of', value, 'for exploit')
 
                 result = ActionResult(
                     True,
@@ -288,7 +287,8 @@ class HostVector:
                     # and access doesn't decrease
                     next_state.access = action.access
                     if action.access == AccessLevel.ROOT:
-                        value = self.value
+                        value = 100.0 if self.sensitive else 0.0
+                        print('Giving reward of', value, 'for privilege escalation')
                 result = ActionResult(
                     True,
                     value=value,
@@ -307,7 +307,7 @@ class HostVector:
                 reachable=False,
                 discovered=False,
                 access=False,
-                value=False,
+                sensitive=False,
                 discovery_value=False,
                 services=False,
                 processes=False,
@@ -324,8 +324,8 @@ class HostVector:
             obs[self._reachable_idx] = self.vector[self._reachable_idx]
         if discovered:
             obs[self._discovered_idx] = self.vector[self._discovered_idx]
-        if value:
-            obs[self._value_idx] = self.vector[self._value_idx]
+        if sensitive:
+            obs[self._sensitive_idx] = self.vector[self._sensitive_idx]
         if discovery_value:
             v = self.vector[self._discovery_value_idx]
             obs[self._discovery_value_idx] = v
@@ -379,8 +379,8 @@ class HostVector:
         )
         cls._reachable_idx = cls._compromised_idx + 1
         cls._discovered_idx = cls._reachable_idx + 1
-        cls._value_idx = cls._discovered_idx + 1
-        cls._discovery_value_idx = cls._value_idx + 1
+        cls._sensitive_idx = cls._discovered_idx + 1
+        cls._discovery_value_idx = cls._sensitive_idx + 1
         cls._access_start_idx = cls._discovery_value_idx + 1
         cls._os_start_idx = cls._access_start_idx + len(AccessLevel)
         cls._service_start_idx = cls._os_start_idx + cls.num_os
@@ -431,7 +431,7 @@ class HostVector:
         readable_dict["Compromised"] = bool(hvec.compromised)
         readable_dict["Reachable"] = bool(hvec.reachable)
         readable_dict["Discovered"] = bool(hvec.discovered)
-        readable_dict["Value"] = hvec.value
+        readable_dict["Sensitive"] = hvec.sensitive
         readable_dict["Discovery Value"] = hvec.discovery_value
         readable_dict["Access"] = hvec.access
         for os_name in cls.os_idx_map:
