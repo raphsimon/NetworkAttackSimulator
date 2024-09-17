@@ -288,7 +288,7 @@ class HostVector:
                     next_state.access = action.access
                     if action.access == AccessLevel.ROOT:
                         value = 100.0 if self.sensitive else 0.0
-                        print('Giving reward of', value, 'for privilege escalation')
+
                 result = ActionResult(
                     True,
                     value=value,
