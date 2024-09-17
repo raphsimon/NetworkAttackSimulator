@@ -171,4 +171,4 @@ firewall:
   (4, 3): [ftp, ssh]
   (3, 5): [ssh, ftp]
   (5, 3): [ftp, ssh]
-step_limit: 2000
+step_limit: 1500
