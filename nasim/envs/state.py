@@ -200,8 +200,8 @@ class State:
 
         # With the observation rework, we shouldn't expect any values different
         # from 0 or 1 in the observation.
-        assert np.all(np.isin(obs, [0, 1])), \
-            "Observation contains values different from 0 or 1."
+        assert np.all(np.isin(obs.numpy(), [0, 1])), \
+            f"Observation contains values different from 0 or 1. Observation:\n{obs}"
 
         return obs
 
