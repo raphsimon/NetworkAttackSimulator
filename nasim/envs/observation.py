@@ -63,7 +63,8 @@ class Observation:
     def get_space_bounds(scenario):
         # We removed the value as being part of the bounds since it is not
         # part of the state or observations anymore. It has been replaced
-        # with the 'sensitive' property.
+        # with the boolean 'sensitive' property. Thus, it won't matter for
+        # the space bounds.
         discovery_bounds = scenario.host_discovery_value_bounds
         obs_low = min(
             0,
