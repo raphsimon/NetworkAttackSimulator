@@ -32,6 +32,40 @@ class AggregatedObsWrapper(gym.Wrapper):
         return stacked_obs, reward, terminated, truncated, info
     
 
+class AggregatedObsActionInfoWrapper(gym.Wrapper):
+    """This wrapper is used to aggregate the observations the agent gets during
+    an episode. Instead of the observations being the result of the action, we
+    alter the observation to converge towards the state by aggregating all prior
+    observations into a single observation. The idea is basically to keep track
+    of everything we know about the environment within one single observation.
+
+    Args:
+        gym (_type_): _description_
+    """
+    def __init__(self, env):
+        super().__init__(env)
+
+        self.host_vec_len = len(self.unwrapped.current_state.hosts[0][1].vector)
+        self.num_hosts = len(self.unwrapped.current_state.hosts)
+        self.num_actions = self.action_space.n // self.num_hosts
+        self.columns = self.host_vec_len + self.num_actions + 4 # 4 different return signals
+        self.last_obs, _ = self.reset()
+        # Reshape last obs to work with it more easily
+        self.last_obs = self.last_obs.reshape((self.num_hosts, self.columns)) 
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+
+        # I think there might be a method to achieve the same without reshaping.
+        obs_matrix = obs.reshape((self.num_hosts, self.columns))
+        
+        self.last_obs[:,self.host_vec_len:] = 0 # Remove auxiliary information          
+        aggregated_obs = np.maximum(self.last_obs, obs_matrix) # We overlay
+        self.last_obs = aggregated_obs # Update last_obs
+
+        return aggregated_obs.flatten(), reward, terminated, truncated, info
+    
+
 class EmptyInfoWrapper(gym.Wrapper):
     """We use this wrapper to only return an empty dictionary as the info
     about the environment. This is done because the information contained
@@ -124,16 +158,16 @@ if __name__ == '__main__':
 
     optimal_actions_tiny = [4, 2, 16, 17, 10, 11]
 
-    """
-    print('=' * 30 + ' PO Env ' + '=' * 30)
     ground_truth_env = nasim.make_benchmark('tiny')
+
+    print('=' * 30 + ' PO Env ' + '=' * 30)
     orig_obs = get_observation_sequence(ground_truth_env, optimal_actions_tiny)
+
     
     print('=' * 30 + ' Aggregated Obs ' + '=' * 30)
-    aggregated_obs_env = AggregatedObsWrapper(ground_truth_env)
+    aggregated_obs_env = AggregatedObsActionInfoWrapper(ground_truth_env)
     aggr_obs = get_observation_sequence(aggregated_obs_env, optimal_actions_tiny)
-    """
 
-    print('=' * 30 + ' Fully Obs Env ' + '=' * 30)
-    fully_obs_env = make_benchmark('tiny', fully_obs=True)
-    orig_obs = get_observation_sequence(fully_obs_env, optimal_actions_tiny)
+    #print('=' * 30 + ' Fully Obs Env ' + '=' * 30)
+    #fully_obs_env = make_benchmark('tiny', fully_obs=True)
+    #orig_obs = get_observation_sequence(fully_obs_env, optimal_actions_tiny)
