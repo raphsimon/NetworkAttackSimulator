@@ -1,7 +1,7 @@
 import numpy as np
 
 from nasim.envs.host_vector import HostVector
-from nasim.envs.observation import Observation
+from nasim.envs.observation import Observation, ObservationWithActionInfo
 
 
 class State:
@@ -97,7 +97,7 @@ class State:
         new_tensor = np.copy(self.tensor)
         return State(new_tensor, self.host_num_map)
 
-    def get_initial_observation(self, fully_obs):
+    def get_initial_observation(self, fully_obs, num_actions):
         """Get the initial observation of network.
 
         Returns
@@ -105,10 +105,12 @@ class State:
         Observation
             an observation object
         """
-        obs = Observation(self.shape())
         if fully_obs:
+            obs = Observation(self.shape())
             obs.from_state(self)
             return obs
+        
+        obs = ObservationWithActionInfo(self.shape(), num_actions)
 
         for host_addr, host in self.hosts:
             if not host.reachable:
@@ -117,10 +119,14 @@ class State:
                                     reachable=True,
                                     discovered=True)
             host_idx = self.get_host_idx(host_addr)
+            print(host_obs)
+            print(host_idx)
             obs.update_from_host(host_idx, host_obs)
         return obs
 
-    def get_observation(self, action, action_result, fully_obs):
+    def get_observation(
+            self, action, action_result, action_idx, fully_obs, num_actions
+            ):
         """Get observation given last action and action result
 
         Parameters
@@ -137,11 +143,19 @@ class State:
         Observation
             an observation object
         """
-        obs = Observation(self.shape())
-        obs.from_action_result(action_result)
         if fully_obs:
-            obs.from_state(self)
+            obs = Observation(self.shape())
+            obs.from_state_and_action(action_result)
             return obs
+        
+        actions_per_host = num_actions // len(self.host_num_map)
+        obs = ObservationWithActionInfo(self.shape(), actions_per_host)
+        t_idx, t_host = self.get_host_and_idx(action.target)
+        # Set the auxiliary information for the host
+        obs.from_action_result(t_idx, action_result)
+        # Set the executed action for the host
+        obs.from_performed_action(t_idx, action_idx % actions_per_host)
+
 
         if action.is_noop():
             return obs
@@ -150,7 +164,6 @@ class State:
             # action failed so no observation
             return obs
 
-        t_idx, t_host = self.get_host_and_idx(action.target)
         obs_kwargs = dict(
             address=True,       # must be true for success
             compromised=False,

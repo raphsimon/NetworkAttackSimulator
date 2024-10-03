@@ -9,7 +9,7 @@ import numpy as np
 from nasim.envs.state import State
 from nasim.envs.render import Viewer
 from nasim.envs.network import Network
-from nasim.envs.observation import Observation
+from nasim.envs.observation import ObservationWithActionInfo
 from nasim.envs.action import Action, FlatActionSpace, ParameterisedActionSpace
 
 
@@ -89,18 +89,22 @@ class NASimEnv(gym.Env):
         self.network = Network(scenario)
         self.current_state = State.generate_initial_state(self.network)
         self._renderer = None
-        self.reset()
 
         if self.flat_actions:
             self.action_space = FlatActionSpace(self.scenario)
         else:
             self.action_space = ParameterisedActionSpace(self.scenario)
 
+        self.num_actions = self.action_space.n
+
+        self.reset() # Moved this below the initialization of the action space.
+                     # Does it matter?
+
         if self.flat_obs:
             obs_shape = self.last_obs.shape_flat()
         else:
             obs_shape = self.last_obs.shape()
-        obs_low, obs_high = Observation.get_space_bounds(self.scenario)
+        obs_low, obs_high = ObservationWithActionInfo.get_space_bounds(self.scenario)
         self.observation_space = spaces.Box(
             low=obs_low, high=obs_high, shape=obs_shape
         )
@@ -133,7 +137,7 @@ class NASimEnv(gym.Env):
         self.steps = 0
         self.current_state = self.network.reset(self.current_state)
         self.last_obs = self.current_state.get_initial_observation(
-            self.fully_obs
+            self.fully_obs, self.num_actions // len(self.network.hosts)
         )
 
         if self.flat_obs:
@@ -217,6 +221,7 @@ class NASimEnv(gym.Env):
             auxiliary information regarding step
             (see :func:`nasim.env.action.ActionResult.info`)
         """
+        action_idx = action
         if not isinstance(action, Action):
             action = self.action_space.get_action(action)
 
@@ -224,7 +229,7 @@ class NASimEnv(gym.Env):
             state, action
         )
         obs = next_state.get_observation(
-            action, action_obs, self.fully_obs
+            action, action_obs, action_idx, self.fully_obs, self.action_space.n
         )
         done = self.goal_reached(next_state)
         reward = action_obs.value - action.cost
@@ -291,8 +296,8 @@ class NASimEnv(gym.Env):
         if obs is None:
             obs = self.last_obs
 
-        if not isinstance(obs, Observation):
-            obs = Observation.from_numpy(obs, self.current_state.shape())
+        if not isinstance(obs, ObservationWithActionInfo):
+            obs = ObservationWithActionInfo.from_numpy(obs, self.current_state.shape())
 
         if self._renderer is None:
             self._renderer = Viewer(self.network)
