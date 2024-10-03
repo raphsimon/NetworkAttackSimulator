@@ -119,8 +119,6 @@ class State:
                                     reachable=True,
                                     discovered=True)
             host_idx = self.get_host_idx(host_addr)
-            print(host_obs)
-            print(host_idx)
             obs.update_from_host(host_idx, host_obs)
         return obs
 
