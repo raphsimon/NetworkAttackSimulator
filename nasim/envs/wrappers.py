@@ -65,6 +65,7 @@ class StochasticEpisodeStarts(gym.Wrapper):
         # Map over important objects
         self.network = new_env.unwrapped.network
         self.current_state = new_env.unwrapped.current_state
+        self.current_state = self.network.reset(self.current_state)
         self.last_obs = self.current_state.get_initial_observation(
             self.unwrapped.fully_obs
         )
@@ -114,26 +115,78 @@ if __name__ == '__main__':
                 # Exploits can fail since they have a success probability
                 # Retry until we succeed
                 keep_trying = True
+                max_retries = 10
+                retries = 0
                 while keep_trying:
                     o, r, d, trunc, info = env.step(a)
-                    keep_trying = not info['success']
-            print(o, r, d)
+                    retries += 1
+                    keep_trying = not info['success'] and not retries >= max_retries
+                if retries >= max_retries:
+                    continue # Skip this action and try another
+            print(o, a, r, d)
             obs_list.append(o)
+            if d == True: # If we are done earlier with the environment.
+                return obs_list
         return obs_list
-
-
-    optimal_actions_tiny = [4, 2, 16, 17, 10, 11]
-
-    """
-    print('=' * 30 + ' PO Env ' + '=' * 30)
-    ground_truth_env = nasim.make_benchmark('tiny')
-    orig_obs = get_observation_sequence(ground_truth_env, optimal_actions_tiny)
     
-    print('=' * 30 + ' Aggregated Obs ' + '=' * 30)
-    aggregated_obs_env = AggregatedObsWrapper(ground_truth_env)
-    aggr_obs = get_observation_sequence(aggregated_obs_env, optimal_actions_tiny)
-    """
+    def test_aggregated_obs_wrapper():
+        optimal_actions_tiny = [4, 2, 16, 17, 10, 11]
+        optimal_actions_small = [4, 5, 6, 2, 13, 14, 15, 16, 17, 31, 32, 33, 29, 67, 68, 69, 70, 71]
 
-    print('=' * 30 + ' Fully Obs Env ' + '=' * 30)
-    fully_obs_env = make_benchmark('tiny', fully_obs=True)
-    orig_obs = get_observation_sequence(fully_obs_env, optimal_actions_tiny)
+        print('=' * 30 + ' PO Env ' + '=' * 30)
+        ground_truth_env = gym.make('SmallGenPO-v0')
+        orig_obs = get_observation_sequence(ground_truth_env, optimal_actions_small)
+
+        print(ground_truth_env.unwrapped.scenario.get_description())
+        print(ground_truth_env.unwrapped.scenario.sensitive_hosts)
+        print(ground_truth_env.unwrapped.network.get_total_sensitive_host_value())
+
+        host_addresses = [k for k in ground_truth_env.unwrapped.network.hosts.keys()]
+        hosts = [ground_truth_env.unwrapped.current_state.get_host(addr) for addr in host_addresses]
+        sensitive = [bool(h.sensitive) for h in hosts]
+        print(sensitive)
+        sensitive_int = [h.sensitive for h in hosts]
+        print(sensitive_int)
+
+        
+        """
+        print('=' * 30 + ' Aggregated Obs ' + '=' * 30)
+        aggregated_obs_env = AggregatedObsWrapper(ground_truth_env)
+        aggr_obs = get_observation_sequence(aggregated_obs_env, optimal_actions_tiny)
+
+        print('=' * 30 + ' Fully Obs Env ' + '=' * 30)
+        fully_obs_env = make_benchmark('tiny', fully_obs=True)
+        orig_obs = get_observation_sequence(fully_obs_env, optimal_actions_tiny)
+        """
+
+    def print_sensitive_hosts():
+        for i in range(100):
+            print('=' * 80)
+            ground_truth_env = gym.make('SmallGenPO-v0')
+            ground_truth_env.reset()
+
+            host_addresses = [k for k in ground_truth_env.unwrapped.network.hosts.keys()]
+            hosts = [ground_truth_env.unwrapped.current_state.get_host(addr) for addr in host_addresses]
+            sensitive = [bool(h.sensitive) for h in hosts]
+            print(sensitive)
+            sensitive_int = [h.sensitive for h in hosts]
+            print(sensitive_int)
+
+    def test_stochastic_episode_starts():
+        env = gym.make('SmallGenPO-v0') # Without wrapper: +- 57.000
+        env = StochasticEpisodeStarts(env)
+
+        iterations = 100
+        theoretical_rewards = 0
+
+        for i in range(iterations):
+            env.reset()
+            theoretical_rewards += env.unwrapped.get_score_upper_bound()
+        
+        print(f'Theoretical rewards per episode: {sum(theoretical_rewards) // iterations}')
+        print(theoretical_rewards)
+        
+
+    # test_stochastic_episode_starts()
+    # test_aggregated_obs_wrapper()
+    print_sensitive_hosts()
