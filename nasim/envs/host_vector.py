@@ -213,7 +213,7 @@ class HostVector:
         proc_num = self.process_idx_map[proc]
         return bool(self.vector[self._get_process_idx(proc_num)])
 
-    def perform_action(self, action):
+    def perform_action(self, action, host_value):
         """Perform given action against this host
 
         Arguments
@@ -247,8 +247,7 @@ class HostVector:
                     # and access doesn't decrease
                     next_state.access = action.access
                     if action.access == AccessLevel.ROOT:
-                        # TODO Change this from magic values
-                        value = 100.0 if self.sensitive else 0.0
+                        value = host_value
 
                 result = ActionResult(
                     True,
@@ -287,7 +286,7 @@ class HostVector:
                     # and access doesn't decrease
                     next_state.access = action.access
                     if action.access == AccessLevel.ROOT:
-                        value = 100.0 if self.sensitive else 0.0
+                        value = host_value
 
                 result = ActionResult(
                     True,
