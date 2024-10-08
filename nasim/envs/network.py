@@ -21,7 +21,6 @@ class Network:
         self.address_space_bounds = scenario.address_space_bounds
         self.sensitive_addresses = scenario.sensitive_addresses
         self.sensitive_hosts = scenario.sensitive_hosts
-        print('In Network __init__', self.sensitive_hosts)
 
     def reset(self, state):
         """Reset the network state to initial state """
