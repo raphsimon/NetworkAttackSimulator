@@ -101,7 +101,8 @@ class StochasticEpisodeStarts(gym.Wrapper):
         self.current_state = new_env.unwrapped.current_state
         self.current_state = self.network.reset(self.current_state)
         self.last_obs = self.current_state.get_initial_observation(
-            self.unwrapped.fully_obs
+            self.unwrapped.fully_obs,
+            self.unwrapped.num_actions // len(self.network.hosts)
         )
 
         if self.unwrapped.flat_obs:
