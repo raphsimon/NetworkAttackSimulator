@@ -91,6 +91,8 @@ class StochasticEpisodeStarts(gym.Wrapper):
 
         self.envs_buffer = [nasim.make_benchmark(self.unwrapped.name, fully_obs=self.unwrapped.fully_obs)
                             for _ in range(num_envs)]
+        self.num_actions = self.unwrapped.num_actions
+        self.num_hosts = len(self.unwrapped.current_state.hosts)
         
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed, options=options)
@@ -102,7 +104,7 @@ class StochasticEpisodeStarts(gym.Wrapper):
         self.current_state = self.network.reset(self.current_state)
         self.last_obs = self.current_state.get_initial_observation(
             self.unwrapped.fully_obs,
-            self.unwrapped.num_actions // len(self.network.hosts)
+            self.num_actions // self.num_actions
         )
 
         if self.unwrapped.flat_obs:
