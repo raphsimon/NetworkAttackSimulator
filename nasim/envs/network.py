@@ -91,7 +91,11 @@ class Network:
             return self._perform_subnet_scan(next_state, action)
 
         t_host = state.get_host(action.target)
-        next_host_state, action_obs = t_host.perform_action(action)
+        if t_host.sensitive:
+            host_value = self.sensitive_hosts.get(action.target, 0)
+        else:
+            host_value = 0
+        next_host_state, action_obs = t_host.perform_action(action, host_value)
         next_state.update_host(action.target, next_host_state)
         self._update(next_state, action, action_obs)
         return next_state, action_obs

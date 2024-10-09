@@ -466,14 +466,13 @@ class ScenarioGenerator:
                 os_cfg = self._convert_to_os_map(os)
 
                 address = (subnet, h)
-                value = self._get_host_value(address)
                 host = Host(
                     address=address,
                     os=os_cfg.copy(),
                     services=srv_cfg.copy(),
                     processes=proc_cfg.copy(),
                     firewall={},
-                    sensitive=True if value else False,
+                    sensitive=address in self.sensitive_hosts,
                     discovery_value=self.host_discovery_value
                 )
                 hosts[address] = host
@@ -559,14 +558,13 @@ class ScenarioGenerator:
                 process_cfg = self._convert_to_process_map(processes)
                 host_num += 1
                 address = (subnet, m)
-                value = self._get_host_value(address)
                 host = Host(
                     address=address,
                     os=os_cfg.copy(),
                     services=service_cfg.copy(),
                     processes=process_cfg.copy(),
                     firewall={},
-                    sensitive=True if value else False,
+                    sensitive=address in self.sensitive_hosts,
                     discovery_value=self.host_discovery_value
                 )
                 hosts[address] = host
