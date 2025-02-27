@@ -166,6 +166,7 @@ class Network:
 
     def host_traffic_permitted(self, src_addr, dest_addr, service):
         dest_host = self.hosts[dest_addr]
+        # Check if the service not in the firewall
         return dest_host.traffic_permitted(src_addr, service)
 
     def has_required_remote_permission(self, state, action):
