@@ -171,7 +171,7 @@ class HostVector:
     @property
     def access(self):
         # Return the index of the nonzero element from the one-hot encoding.
-        return self.vector[self._access_start_idx:self._os_start_idx].nonzero()[0].item()
+        return self.vector[self._access_start_idx:self._os_start_idx].argmax()
 
     @access.setter
     def access(self, val):
