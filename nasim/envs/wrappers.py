@@ -139,22 +139,6 @@ if __name__ == '__main__':
             print(sensitive)
             sensitive_int = [h.sensitive for h in hosts]
             print(sensitive_int)
-
-    def test_stochastic_episode_starts():
-        env = gym.make('SmallGenPO-v0') # Without wrapper: +- 57.000
-        env = StochasticEpisodeStarts(env)
-
-        iterations = 100
-        theoretical_rewards = 0
-
-        for i in range(iterations):
-            env.reset()
-            theoretical_rewards += env.unwrapped.get_score_upper_bound()
         
-        print(f'Theoretical rewards per episode: {sum(theoretical_rewards) // iterations}')
-        print(theoretical_rewards)
-        
-
-    # test_stochastic_episode_starts()
     # test_aggregated_obs_wrapper()
     print_sensitive_hosts()
