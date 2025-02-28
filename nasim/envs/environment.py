@@ -447,7 +447,7 @@ class NASimEnv(gym.Env):
         assert isinstance(self.action_space, FlatActionSpace), \
             "Can only use action mask function when using flat action space"
 
-        # Create a list of bools telling is uf host i has been discovered
+        # Create a list of bools telling us if host i has been discovered
         discovered = [h[1].discovered for h in self.current_state.hosts]
         num_actions_per_host = self.action_space.n / len(discovered)
 
