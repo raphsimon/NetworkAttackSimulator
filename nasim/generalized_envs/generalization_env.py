@@ -15,8 +15,58 @@ from nasim.envs.state import State
 from nasim.envs.render import Viewer
 from nasim.envs.network import Network
 from nasim.envs.observation import Observation
-from nasim.envs.action import Action, ActionResult, FlatActionSpace, ParameterisedActionSpace
+from nasim.envs.action import load_action_list
+from nasim.envs.action import NoOp, Action, ActionResult, FlatActionSpace
 
+
+class FlatActionSpacePadded(spaces.Discrete):
+    """Flat Action space for NASim environment.
+
+    Inherits and implements the gym.spaces.Discrete action space
+
+    ...
+
+    Attributes
+    ----------
+    n : int
+        the number of actions in the action space
+    actions : list of Actions
+        the list of the Actions in the action space
+    """
+
+    def __init__(self, scenario, pad_to_length):
+        """
+        Parameters
+        ---------
+        scenario : Scenario
+            scenario description
+        """
+        self.actions = load_action_list(scenario)
+        
+        if pad_to_length is not None:
+            num_missing_actions = pad_to_length - len(self.actions)
+            if num_missing_actions > 0:
+                self.actions.extend([NoOp(cost=1.0)] * num_missing_actions)
+        
+        super().__init__(len(self.actions))
+
+    def get_action(self, action_idx):
+        """Get Action object corresponding to action idx
+
+        Parameters
+        ----------
+        action_idx : int
+            the action idx
+
+        Returns
+        -------
+        Action
+            Corresponding Action object
+        """
+        assert isinstance(action_idx, (int, np.integer)), \
+            ("When using flat action space, action must be an integer"
+             f" or an Action object. {type(action_idx)} is invalid")
+        return self.actions[action_idx]
 
 """
 Some discussion points:
@@ -61,12 +111,14 @@ class NASimGenEnv(gym.Env):
         self.exploit_probs = 0.9
         self.privesc_probs = 0.9
         self.restrictiveness = 2
-        self.step_limit = 1000
+        self.r_sensitive = 100
+        self.r_user = 100
+        self.step_limit = 5000
         # Calculate the number of exploits and privescs
         self.num_exploits = self.num_os * self.num_services
         self.num_privescs = self.num_os * self.num_processes
         # address_space_bounds : (int, int), optional
-        #     bounds for the (subnet#, host#) address space. If None bounds will
+        #     bounds for the (#subnet, #host) address space. If None bounds will
         #     be determined by the number of subnets in the scenario and the max
         #     number of hosts in any subnet.
         self.address_space_bounds = (6, 5)
@@ -103,6 +155,8 @@ class NASimGenEnv(gym.Env):
                                                 exploit_probs=self.exploit_probs,
                                                 privesc_probs=self.privesc_probs,
                                                 address_space_bounds=self.address_space_bounds,
+                                                r_sensitive=self.r_sensitive,
+                                                r_user=self.r_user,
                                                 step_limit=self.step_limit)
         self.name = self.scenario.name
         self.fully_obs = fully_obs
@@ -111,7 +165,6 @@ class NASimGenEnv(gym.Env):
         self.render_mode = render_mode
 
         self.current_num_hosts = len(self.scenario.hosts)
-        print('Generated scenario dimensions in __init__():', self.scenario.get_observation_dims())
 
         self.network = Network(self.scenario)
         self.current_state = State.generate_initial_state(self.network)
@@ -119,14 +172,15 @@ class NASimGenEnv(gym.Env):
         self.host_vec_len = self.last_obs.shape()[1] # We have to take the host vector
         # length from here because when vectorizing the host, we do some more encoding,
         # therefore making it bigger.
-        print(f"{self.last_obs.shape()=}")
-        print(f"{self.host_vec_len=}")
+        num_scans = 4
+        self.num_actions_per_host = len(self.scenario.exploits) + len(self.scenario.privescs) + num_scans
+        self.max_num_actions = self.current_num_hosts * self.num_actions_per_host
 
-        if self.flat_actions:
-            self.action_space = FlatActionSpace(self.scenario)
-        else:
-            self.action_space = ParameterisedActionSpace(self.scenario)
-
+        self.action_space = FlatActionSpacePadded(scenario)
+        assert (self.action_space.n == self.max_num_actions), \
+            (f"Action space size of {self.action_space.n} does not match"
+             f" expected action space size of {self.max_num_actions}.")
+        
         if self.flat_obs:
             obs_shape = self.last_obs.shape_flat()
             self.connection_error_obs = np.zeros(obs_shape)
@@ -137,24 +191,8 @@ class NASimGenEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=obs_low, high=obs_high, shape=obs_shape
         )
-
-        print(f"{self.observation_space=}")
-
         self.steps = 0
         
-        # TODO Create buffer with generated scenarios
-        # How about we generate 1000 environments? -> But that takes a lot of time, no? 
-        # can't we just generate the starting state?
-        #   Honestly, it doesn't look like it would take a lot of time.
-        #   Also generating them on the go with a seed would mean that our environment
-        #   Has a smaller footprint overall, which is something very good.
-        # I think we can already improve the execution time by removing the action space generation
-        
-        # TODO When generated, look at the subnet sizes -> Do they change between scenarios?
-        # Answer: Yes: The subnet sizes can change, and this affects the action space,
-        # because a host is indexed by its subnet and number in the subnet. Does this matter for
-        # the actions?
-
     def _generate_new_network(self):
         num_hosts = np.random.randint(self.min_num_hosts, self.max_num_hosts+1)
         scenario = self.generator.generate(num_hosts=num_hosts, 
@@ -170,17 +208,13 @@ class NASimGenEnv(gym.Env):
                                                 step_limit=self.step_limit)
         self.current_num_hosts = len(scenario.hosts)
         # Actions per host are all the exploits, privescs, and the scans (4)
-        self.num_actions_per_host = len(scenario.exploits) + len(scenario.privescs) + 4
         self.network = Network(scenario)
-        print('Newly generated scenario dimensions:', scenario.get_observation_dims())
         self.current_state = State.generate_initial_state(self.network)
 
-        # TODO: Think about this. We get 
-        if self.flat_actions:
-            self.action_space = FlatActionSpace(scenario)
-        else:
-            self.action_space = ParameterisedActionSpace(scenario)
-        
+        self.action_space = FlatActionSpacePadded(scenario, pad_to_length=self.max_num_actions)
+        assert (self.action_space.n == self.max_num_actions), \
+            (f"Action space size of {self.action_space.n} does not match"
+             f" expected action space size of {self.max_num_actions}.")
         self.scenario = scenario
 
     def seed(self, seed):
@@ -219,12 +253,6 @@ class NASimGenEnv(gym.Env):
             # execute the action on the network since it's out of bounds.
             action_res = ActionResult(False, 0.0, connection_error=True)
             reward = action_res.value - 1.0 # We set cost of the wrong action to -1.0
-
-            done = False
-            step_limit_reached = (
-                self.step_limit is not None
-                and self.steps >= self.step_limit
-            )
             
             obs = Observation((self.max_num_hosts, self.host_vec_len))
             obs.from_action_result(action_res)
@@ -237,6 +265,12 @@ class NASimGenEnv(gym.Env):
             
             self.steps += 1
 
+            done = False
+            step_limit_reached = (
+                self.step_limit is not None
+                and self.steps >= self.step_limit
+            )
+
             return obs, reward, done, step_limit_reached, action_res.info()
         else:
             next_state, obs, reward, done, info = self.generative_step(
@@ -247,15 +281,14 @@ class NASimGenEnv(gym.Env):
             self.last_obs = obs
 
             obs_np = obs.numpy()
-            print("Obs numpy shape:", obs_np.shape)
             num_hosts_to_insert = self.max_num_hosts - self.current_num_hosts
-            new_row = np.zeros((num_hosts_to_insert, obs_np.shape[1]))  # Create a row with the same number of columns
+            # Create a row with the same number of columns
+            new_row = np.zeros((num_hosts_to_insert, obs_np.shape[1]))
             new_obs = np.insert(obs_np, obs_np.shape[0]-1, new_row, axis=0)
 
             assert new_obs.shape == (self.max_num_hosts+1, self.host_vec_len), \
                 f"Error: Observation shape: {new_obs.shape}, is different from exptected shape: {(self.max_num_hosts+1, self.host_vec_len)}"
 
-            # TODO: Check whether this works as intended.
             if self.flat_obs:
                 obs = new_obs.flatten()
             else:
@@ -267,6 +300,7 @@ class NASimGenEnv(gym.Env):
                 self.step_limit is not None
                 and self.steps >= self.step_limit
             )
+            
             return obs, reward, done, step_limit_reached, info
 
     def generative_step(self, state, action):
@@ -318,13 +352,11 @@ class NASimGenEnv(gym.Env):
         self.last_obs = self.current_state.get_initial_observation(
             self.fully_obs
         )
-        print("self.last_obs.shape() in env.reset()", self.last_obs.shape())
 
         last_obs_np = self.last_obs.numpy()
-        print("In env.reset(): last_obs_np.shape =", last_obs_np.shape)
         num_hosts_to_insert = self.max_num_hosts - self.current_num_hosts
-        print("In env.reset(): num_hosts_to_insert =", num_hosts_to_insert)
-        new_row = np.zeros((num_hosts_to_insert, last_obs_np.shape[1]))  # Create a row with the same number of columns
+        # Create a row with the same number of columns
+        new_row = np.zeros((num_hosts_to_insert, last_obs_np.shape[1]))
         buffered_obs = np.insert(last_obs_np, last_obs_np.shape[0]-1, new_row, axis=0)
 
         assert buffered_obs.shape == (self.max_num_hosts+1, self.host_vec_len), \
@@ -334,8 +366,6 @@ class NASimGenEnv(gym.Env):
             obs = buffered_obs.flatten()
         else:
             obs = buffered_obs
-
-        print("In env.reset(): obs.shape = ", obs.shape)
 
         return obs, {}
 
@@ -383,7 +413,6 @@ class NASimGenEnv(gym.Env):
         """
         return self.network.get_minimal_hops()
     
-    # TODO: Test this method.
     def action_masks(self):
         """Get a vector mask for valid actions. The mask is based on whether
         a host has been discovered or not.
@@ -478,28 +507,31 @@ if __name__ == '__main__':
 
     print("Observation space upron creation:", env.observation_space.shape)
     print("Action space upon creation:", env.action_space)
+    print(f"Action space size", env.action_space.n)
 
     obs, info = env.reset()
     print("Observation shape after reset:", obs.shape)
+    print(f"Action space size", env.action_space.n)
     print("Another reset:")
     obs, info = env.reset()
     print("Observation shape after reset:", obs.shape)
-
-    # TODO: Fix obseration space problems. It's not consistent!
+    print(f"Action space size", env.action_space.n)
 
     obs, r, d, t, i = env.step(0)
     print(obs, r, d, t, i)
     print("Observation shape after step:", obs.shape)
+    print(f"Action space size", env.action_space.n)
 
     obs, r, d, t, i = env.step(156)
     print(obs, r, d, t, i)
     print("Observation shape after step:", obs.shape)
+    print(f"Action space size", env.action_space.n)
 
     sys.exit(0)
     # TRY NOT TO MODIFY: seeding
     #np.random.seed(4444)
 
-    # TODO: Verify host values. Are they in line with our formalization?
+    print()
 
     generator = ModifiedScenarioGenerator()    
 
