@@ -2,6 +2,7 @@ import gymnasium as gym
 from gymnasium.envs.registration import register
 
 from nasim.envs import NASimEnv
+from nasim.generalized_envs import NASimGenEnv
 from nasim.scenarios.benchmark import AVAIL_BENCHMARKS
 from nasim.scenarios import \
     make_benchmark_scenario, load_scenario, generate_scenario
@@ -211,4 +212,53 @@ for benchmark in AVAIL_BENCHMARKS:
             nondeterministic=True
         )
 
+# Regsiter NASimGenEnv
+for fully_obs in [True, False]:
+    if not fully_obs:
+        name = "GenPO"
+    else:
+        name = "Gen"
+    _register(
+        id=f"{name}-v0",
+        entry_point='nasim.generalized_envs:NASimGenEnv',
+        kwargs={
+            "fully_obs": fully_obs,
+            "flat_actions": True,
+            "flat_obs": True
+        },
+        nondeterministic=True
+    )
+
+    _register(
+        id=f"{name}2D-v0",
+        entry_point='nasim.generalized_envs:NASimGenEnv',
+        kwargs={
+            "fully_obs": fully_obs,
+            "flat_actions": True,
+            "flat_obs": False
+        },
+        nondeterministic=True
+    )
+
+    _register(
+        id=f"{name}VA-v0",
+        entry_point='nasim.generalized_envs:NASimGenEnv',
+        kwargs={
+            "fully_obs": fully_obs,
+            "flat_actions": False,
+            "flat_obs": True
+        },
+        nondeterministic=True
+    )
+
+    _register(
+        id=f"{name}2DVA-v0",
+        entry_point='nasim.generalized_envs:NASimGenEnv',
+        kwargs={
+            "fully_obs": fully_obs,
+            "flat_actions": False,
+            "flat_obs": False
+        },
+        nondeterministic=True
+    )
 __version__ = "0.14.0"
