@@ -46,7 +46,7 @@ setup(
     ],
     install_requires=[
         'gymnasium>=0.26',
-        'numpy>=1.18',
+        'numpy>=2.0.2',
         'networkx>=2.4',
         'matplotlib>=3.1',
         'pyyaml>=5.3',
