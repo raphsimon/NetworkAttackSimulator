@@ -22,7 +22,7 @@ USER = 3
 VUL_RETRIES = 5
 
 
-class ScenarioGeneratorWIP:
+class ModifiedScenarioGenerator:
     """Generates a scenario based on standard formula
 
     For explanation of the details of how scenarios are generated see
