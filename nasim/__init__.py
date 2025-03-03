@@ -240,25 +240,4 @@ for fully_obs in [True, False]:
         nondeterministic=True
     )
 
-    _register(
-        id=f"{name}VA-v0",
-        entry_point='nasim.generalized_envs:NASimGenEnv',
-        kwargs={
-            "fully_obs": fully_obs,
-            "flat_actions": False,
-            "flat_obs": True
-        },
-        nondeterministic=True
-    )
-
-    _register(
-        id=f"{name}2DVA-v0",
-        entry_point='nasim.generalized_envs:NASimGenEnv',
-        kwargs={
-            "fully_obs": fully_obs,
-            "flat_actions": False,
-            "flat_obs": False
-        },
-        nondeterministic=True
-    )
 __version__ = "0.14.0"
