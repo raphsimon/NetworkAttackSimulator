@@ -115,7 +115,7 @@ class NASimGenEnv(gym.Env):
         self.restrictiveness = 2
         self.r_sensitive = 100
         self.r_user = 100
-        self.step_limit = 5000
+        self.step_limit = 1000
         # Calculate the number of exploits and privescs
         self.num_exploits = self.num_os * self.num_services
         self.num_privescs = self.num_os * self.num_processes
@@ -162,6 +162,7 @@ class NASimGenEnv(gym.Env):
 
         self.network = Network(self.scenario)
         self.current_state = State.generate_initial_state(self.network)
+        self._renderer = None
         self.last_obs = self.current_state.get_initial_observation(self.fully_obs)
         self.host_vec_len = self.last_obs.shape()[1] # We have to take the host vector
         # length from here because when vectorizing the host, we do some more encoding,
@@ -340,8 +341,8 @@ class NASimGenEnv(gym.Env):
         # Here we need to pick one of the generated scenarios and switch out 
         # everything related.
         super().reset(seed=seed, options=options)
-        if seed:
-            np.random.seed(seed)
+        #if seed:
+        #    np.random.seed(seed)
         self.steps = 0
         self.scenario = self._generate_new_network()
         self.current_state = self.network.reset(self.current_state)
@@ -499,18 +500,42 @@ if __name__ == '__main__':
     print()
     print()
 
+    # TESTING ACTION SPACE GENERATION
+
+    #print()
+    #print("Action space 1:")
+    #print()
+    #env1 = gym.make('Gen-v0', seed=12356)
+    #env2 = gym.make('Gen-v0', seed=4444)
+#
+    #env1.reset()
+    #env2.reset()
+#
+    #for a in range(env1.unwrapped.action_space.n):
+    #    print(env1.unwrapped.action_space.get_action(a))
+#
+    #print()
+    #print("Action space 2:")
+    #print()
+    #for a in range(env2.unwrapped.action_space.n):
+    #    print(env2.unwrapped.action_space.get_action(a))
+#
+#
+    #sys.exit(0)
+
     # SEEDING TESTS
 
     # TRY NOT TO MODIFY: seeding
     np.random.seed(4444)
     random.seed(4444)
 
-    env1 = gym.make('Gen-v0', seed=4444)
-    env2 = gym.make('Gen-v0', seed=4444)
+    env1 = gym.make('Gen-v0')#, seed=4444)
+    env2 = gym.make('Gen-v0')#, seed=4444)
 
-    reset1, _ = env1.reset(seed=7)
+    print('First reset:')
+    reset1, _ = env1.reset(seed=None)
     print(reset1)
-    reset2, _ = env2.reset(seed=7)
+    reset2, _ = env2.reset(seed=None)
     print(reset2)
 
     print(np.array_equal(reset1, reset2))
