@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
@@ -34,7 +35,7 @@ class FlatActionSpacePadded(spaces.Discrete):
         the list of the Actions in the action space
     """
 
-    def __init__(self, scenario, pad_to_length):
+    def __init__(self, scenario, pad_to_length=None):
         """
         Parameters
         ---------
@@ -100,7 +101,8 @@ class NASimGenEnv(gym.Env):
                  fully_obs=False,
                  flat_actions=True,
                  flat_obs=True,
-                 render_mode=None):
+                 render_mode=None,
+                 seed=None):
         # TODO: These are hardcoded values for now, but they should be
         #       parameters that can be passed to the environment.
         self.max_num_hosts = 15
@@ -131,16 +133,8 @@ class NASimGenEnv(gym.Env):
         # us to have a compacter observation space. So we don't define it larger
         # than it needs to be.
 
-        # TODO Verify correct seeding
-        # But for this, don't we have to remove any generation of environment
-        # properties form the __init__() function? Since basically, we create
-        # the environment. env = gym.make('NASimGenEnv'). Then this means that
-        # already generate the state and action space etc. with one arbitrary
-        # seed. Then if we call env.seed(1), only then we change the seed, but
-        # we already generated something on a different seed.
-        # Question: If we then call env.reset(), will they all reset to the same
-        # state? If yes, then we are good, since we have to call env.reset()
-        # before interacting with the environment.
+        if seed:
+            np.random.seed(seed)
 
         self.generator = ModifiedScenarioGenerator()
         # At the start we generate a scenario with the maximum number of hosts
@@ -176,7 +170,7 @@ class NASimGenEnv(gym.Env):
         self.num_actions_per_host = len(self.scenario.exploits) + len(self.scenario.privescs) + num_scans
         self.max_num_actions = self.current_num_hosts * self.num_actions_per_host
 
-        self.action_space = FlatActionSpacePadded(scenario)
+        self.action_space = FlatActionSpacePadded(self.scenario)
         assert (self.action_space.n == self.max_num_actions), \
             (f"Action space size of {self.action_space.n} does not match"
              f" expected action space size of {self.max_num_actions}.")
@@ -346,6 +340,8 @@ class NASimGenEnv(gym.Env):
         # Here we need to pick one of the generated scenarios and switch out 
         # everything related.
         super().reset(seed=seed, options=options)
+        if seed:
+            np.random.seed(seed)
         self.steps = 0
         self.scenario = self._generate_new_network()
         self.current_state = self.network.reset(self.current_state)
@@ -502,6 +498,43 @@ if __name__ == '__main__':
     print()
     print()
     print()
+
+    # SEEDING TESTS
+
+    # TRY NOT TO MODIFY: seeding
+    np.random.seed(4444)
+    random.seed(4444)
+
+    env1 = gym.make('Gen-v0', seed=4444)
+    env2 = gym.make('Gen-v0', seed=4444)
+
+    reset1, _ = env1.reset(seed=7)
+    print(reset1)
+    reset2, _ = env2.reset(seed=7)
+    print(reset2)
+
+    print(np.array_equal(reset1, reset2))
+
+    print('Second reset:')
+    reset1, _ = env1.reset(seed=7)
+    print(reset1)
+    reset2, _ = env2.reset(seed=7)
+    print(reset2)
+
+    print(np.array_equal(reset1, reset2))
+
+    """A note regarding seeding: Since we generate an initial network in our
+    __init__() method, we can't just pass a seed to the env.reset() method and
+    then expect our network to reset to the same state. We have to provide a
+    seed upon environment initialisation, and then also to env.reset(). Only
+    this assures that we reset to the same state.
+
+    BUT overall, this shouldn't be done during training, since we want to
+    make sure the agent encounters a large set of states during training. This
+    is just to make sure that if needed, we can assure reproducibility.
+    """
+
+    sys.exit(0)
 
     env = gym.make('GenPO-v0')
 
