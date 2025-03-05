@@ -8,8 +8,7 @@ import sys
 import nasim
 
 from nasim.generalized_envs.generator import ModifiedScenarioGenerator
-import time
-import psutil
+
 
 import nasim.scenarios
 from nasim.envs.state import State
@@ -110,8 +109,8 @@ class NASimGenEnv(gym.Env):
         self.num_os = 2
         self.num_services = 4
         self.num_processes = 3
-        self.exploit_probs = 0.9
-        self.privesc_probs = 0.9
+        self.exploit_probs = 1.0#0.9
+        self.privesc_probs = 1.0#0.9
         self.restrictiveness = 2
         self.r_sensitive = 100
         self.r_user = 100
@@ -502,26 +501,26 @@ if __name__ == '__main__':
 
     # TESTING ACTION SPACE GENERATION
 
-    #print()
-    #print("Action space 1:")
-    #print()
-    #env1 = gym.make('Gen-v0', seed=12356)
-    #env2 = gym.make('Gen-v0', seed=4444)
-#
-    #env1.reset()
-    #env2.reset()
-#
-    #for a in range(env1.unwrapped.action_space.n):
-    #    print(env1.unwrapped.action_space.get_action(a))
-#
-    #print()
-    #print("Action space 2:")
-    #print()
-    #for a in range(env2.unwrapped.action_space.n):
-    #    print(env2.unwrapped.action_space.get_action(a))
-#
-#
-    #sys.exit(0)
+    print()
+    print("Action space 1:")
+    print()
+    env1 = gym.make('Gen-v0', seed=12356)
+    env2 = gym.make('Gen-v0', seed=4444)
+
+    env1.reset()
+    env2.reset()
+
+    for a in range(env1.unwrapped.action_space.n):
+        print(env1.unwrapped.action_space.get_action(a))
+
+    print()
+    print("Action space 2:")
+    print()
+    for a in range(env2.unwrapped.action_space.n):
+        print(env2.unwrapped.action_space.get_action(a))
+
+
+    sys.exit(0)
 
     # SEEDING TESTS
 
