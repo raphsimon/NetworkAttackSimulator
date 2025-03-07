@@ -104,17 +104,17 @@ class NASimGenEnv(gym.Env):
                  seed=None):
         # TODO: These are hardcoded values for now, but they should be
         #       parameters that can be passed to the environment.
-        self.max_num_hosts = 15
+        self.max_num_hosts = 8
         self.min_num_hosts = 5
         self.num_os = 2
-        self.num_services = 4
-        self.num_processes = 3
+        self.num_services = 2
+        self.num_processes = 2
         self.exploit_probs = 1.0#0.9
         self.privesc_probs = 1.0#0.9
         self.restrictiveness = 2
         self.r_sensitive = 100
         self.r_user = 100
-        self.step_limit = 1000
+        self.step_limit = 2000
         # Calculate the number of exploits and privescs
         self.num_exploits = self.num_os * self.num_services
         self.num_privescs = self.num_os * self.num_processes
@@ -190,16 +190,18 @@ class NASimGenEnv(gym.Env):
     def _generate_new_network(self):
         num_hosts = np.random.randint(self.min_num_hosts, self.max_num_hosts+1)
         scenario = self.generator.generate(num_hosts=num_hosts, 
-                                                num_services=self.num_services,
-                                                num_os=self.num_os,
-                                                num_processes=self.num_processes,
-                                                restrictiveness=self.restrictiveness,
-                                                num_exploits=self.num_exploits,
-                                                num_privescs=self.num_privescs,
-                                                exploit_probs=self.exploit_probs,
-                                                privesc_probs=self.privesc_probs,
-                                                address_space_bounds=self.address_space_bounds,
-                                                step_limit=self.step_limit)
+                                           num_services=self.num_services,
+                                           num_os=self.num_os,
+                                           num_processes=self.num_processes,
+                                           restrictiveness=self.restrictiveness,
+                                           num_exploits=self.num_exploits,
+                                           num_privescs=self.num_privescs,
+                                           exploit_probs=self.exploit_probs,
+                                           privesc_probs=self.privesc_probs,
+                                           address_space_bounds=self.address_space_bounds,
+                                           r_sensitive=self.r_sensitive,
+                                           r_user=self.r_user,
+                                           step_limit=self.step_limit)
         self.current_num_hosts = len(scenario.hosts)
         # Actions per host are all the exploits, privescs, and the scans (4)
         self.network = Network(scenario)
