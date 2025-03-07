@@ -200,9 +200,7 @@ class ModifiedScenarioGenerator:
         self._generate_services(num_services)
         self._generate_processes(num_processes)
         self._generate_exploits(exploit_cost, exploit_probs)
-        #print(self.exploits)
         self._generate_privescs(privesc_cost, privesc_probs)
-        #print(self.privescs)
         self._generate_sensitive_hosts(r_sensitive, r_user, random_goal)
         self.base_host_value = base_host_value
         self.host_discovery_value = host_discovery_value
@@ -342,14 +340,13 @@ class ModifiedScenarioGenerator:
         exploits_added = 0
         for os in self.os:
             for srv in self.services:
-                al = u.USER_ACCESS
                 e_name = f"e_{srv}_{os}"
                 exploits[e_name] = {
                     u.EXPLOIT_SERVICE: srv,
                     u.EXPLOIT_OS: os,
                     u.EXPLOIT_PROB: exploit_probs[exploits_added],
                     u.EXPLOIT_COST: exploit_cost,
-                    u.EXPLOIT_ACCESS: al
+                    u.EXPLOIT_ACCESS: u.USER_ACCESS
                 }
                 exploits_added += 1
         self.exploits = exploits
