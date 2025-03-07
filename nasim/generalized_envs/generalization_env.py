@@ -109,7 +109,9 @@ class NASimGenEnv(gym.Env):
         self.num_os = 2
         self.num_services = 2
         self.num_processes = 2
+        self.exploit_cost = 5
         self.exploit_probs = 1.0#0.9
+        self.privesc_cost = 5
         self.privesc_probs = 1.0#0.9
         self.restrictiveness = 2
         self.r_sensitive = 100
@@ -145,7 +147,9 @@ class NASimGenEnv(gym.Env):
                                                 restrictiveness=self.restrictiveness,
                                                 num_exploits=self.num_exploits,
                                                 num_privescs=self.num_privescs,
+                                                exploit_cost=self.exploit_cost,
                                                 exploit_probs=self.exploit_probs,
+                                                privesc_cost=self.privesc_cost,
                                                 privesc_probs=self.privesc_probs,
                                                 address_space_bounds=self.address_space_bounds,
                                                 r_sensitive=self.r_sensitive,
@@ -196,7 +200,9 @@ class NASimGenEnv(gym.Env):
                                            restrictiveness=self.restrictiveness,
                                            num_exploits=self.num_exploits,
                                            num_privescs=self.num_privescs,
+                                           exploit_cost=self.exploit_cost,
                                            exploit_probs=self.exploit_probs,
+                                           privesc_cost=self.privesc_cost,
                                            privesc_probs=self.privesc_probs,
                                            address_space_bounds=self.address_space_bounds,
                                            r_sensitive=self.r_sensitive,
@@ -378,6 +384,115 @@ class NASimGenEnv(gym.Env):
         if self.render_mode is None:
             return
         return self.render_obs(mode=self.render_mode, obs=self.last_obs)
+    
+    def render_obs(self, mode="human", obs=None):
+        """Render observation.
+
+        See render module for more details on modes and symbols.
+
+        Parameters
+        ----------
+        mode : str
+            rendering mode
+        obs : Observation or numpy.ndarray, optional
+            the observation to render, if None will render last observation.
+            If numpy.ndarray it must be in format that matches Observation
+            (i.e. ndarray returned by step method) (default=None)
+        """
+        if mode is None:
+            return
+
+        if obs is None:
+            obs = self.last_obs
+
+        if not isinstance(obs, Observation):
+            obs = Observation.from_numpy(obs, self.current_state.shape())
+
+        if self._renderer is None:
+            self._renderer = Viewer(self.network)
+
+        if mode in ("human", "ansi"):
+            return self._renderer.render_readable(obs)
+        else:
+            raise NotImplementedError(
+                "Please choose correct render mode from :"
+                f"{self.metadata['render_modes']}"
+            )
+        
+    def render_state(self, mode="human", state=None):
+        """Render state.
+
+        See render module for more details on modes and symbols.
+
+        If mode = ASCI:
+            Machines displayed in rows, with one row for each subnet and
+            hosts displayed in order of id within subnet
+
+        Parameters
+        ----------
+        mode : str
+            rendering mode
+        state : State or numpy.ndarray, optional
+            the State to render, if None will render current state
+            If numpy.ndarray it must be in format that matches State
+            (i.e. ndarray returned by generative_step method) (default=None)
+        """
+        if mode is None:
+            return
+
+        if state is None:
+            state = self.current_state
+
+        if not isinstance(state, State):
+            state = State.from_numpy(state,
+                                     self.current_state.shape(),
+                                     self.current_state.host_num_map)
+
+        if self._renderer is None:
+            self._renderer = Viewer(self.network)
+
+        if mode in ("human", "ansi"):
+            return self._renderer.render_readable_state(state)
+        else:
+            raise NotImplementedError(
+                "Please choose correct render mode from : "
+                f"{self.metadata['render_modes']}"
+            )
+
+    def render_action(self, action):
+        """Renders human readable version of action.
+
+        This is mainly useful for getting a text description of the action
+        that corresponds to a given integer.
+
+        Parameters
+        ----------
+        action : Action or int or list or NumpyArray
+            Action to render. If not Action object, then if using
+            flat actions this should be an int and if using non-flat actions
+            this should be an indexable array.
+        """
+        if not isinstance(action, Action):
+            action = self.action_space.get_action(action)
+        print(action)
+
+    def render_episode(self, episode, width=7, height=7):
+        """Render an episode as sequence of network graphs, where an episode
+        is a sequence of (state, action, reward, done) tuples generated from
+        interactions with environment.
+
+        Parameters
+        ----------
+        episode : list
+            list of (State, Action, reward, done) tuples
+        width : int
+            width of GUI window
+        height : int
+            height of GUI window
+        """
+        if self._renderer is None:
+            self._renderer = Viewer(self.network)
+        self._renderer.render_episode(episode, width, height)
     
     def render_network_graph(self, ax=None, show=False):
         """Render a plot of network as a graph with hosts as nodes arranged
