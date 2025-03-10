@@ -109,14 +109,14 @@ class NASimGenEnv(gym.Env):
         self.num_os = 2
         self.num_services = 2
         self.num_processes = 2
-        self.exploit_cost = 5
+        self.exploit_cost = 3
         self.exploit_probs = 1.0#0.9
-        self.privesc_cost = 5
+        self.privesc_cost = 3
         self.privesc_probs = 1.0#0.9
         self.restrictiveness = 2
         self.r_sensitive = 100
         self.r_user = 100
-        self.step_limit = 2000
+        self.step_limit = 5000
         # Calculate the number of exploits and privescs
         self.num_exploits = self.num_os * self.num_services
         self.num_privescs = self.num_os * self.num_processes
