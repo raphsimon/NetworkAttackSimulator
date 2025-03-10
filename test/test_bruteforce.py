@@ -8,6 +8,7 @@ import nasim
 from nasim.scenarios.benchmark import \
     AVAIL_GEN_BENCHMARKS, AVAIL_STATIC_BENCHMARKS
 from nasim.agents.bruteforce_agent import run_bruteforce_agent
+from nasim.generalized_envs.generalization_env import NASimGenEnv
 
 
 @pytest.mark.parametrize("scenario", AVAIL_STATIC_BENCHMARKS)
@@ -43,4 +44,18 @@ def test_bruteforce_gen(scenario, seed, fully_obs, flat_actions, flat_obs):
                                flat_actions=flat_actions,
                                flat_obs=flat_obs,
                                render_mode=None)
+    run_bruteforce_agent(env, verbose=False)
+
+# Test the generalization environment.
+@pytest.mark.parametrize("seed", [0, 30, 666])
+@pytest.mark.parametrize("fully_obs", [True, False])
+@pytest.mark.parametrize("flat_obs", [True, False])
+def test_bruteforce_generalization_env(seed, fully_obs, flat_obs):
+    """Tests all generated benchmark scenarios using every possible environment
+    setting, using bruteforce agent, checking for any errors
+    """
+    env = NASimGenEnv(seed=seed,
+                      fully_obs=fully_obs,
+                      flat_obs=flat_obs,
+                      render_mode=None)
     run_bruteforce_agent(env, verbose=False)
