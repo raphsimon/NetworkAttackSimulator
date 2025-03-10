@@ -426,7 +426,7 @@ class HostVector:
     def get_readable(cls, vector):
         readable_dict = dict()
         hvec = cls(vector)
-        readable_dict["Address"] = hvec.address
+        readable_dict["Address"] = tuple(int(x) for x in hvec.address) # We don't want to print (np.int64(0), np.int64(0)), so convert to python int.
         readable_dict["Compromised"] = bool(hvec.compromised)
         readable_dict["Reachable"] = bool(hvec.reachable)
         readable_dict["Discovered"] = bool(hvec.discovered)
