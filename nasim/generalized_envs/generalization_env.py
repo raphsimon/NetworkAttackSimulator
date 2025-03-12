@@ -101,22 +101,35 @@ class NASimGenEnv(gym.Env):
                  flat_actions=True,
                  flat_obs=True,
                  render_mode=None,
-                 seed=None):
-        # TODO: These are hardcoded values for now, but they should be
-        #       parameters that can be passed to the environment.
-        self.max_num_hosts = 8
-        self.min_num_hosts = 5
-        self.num_os = 2
-        self.num_services = 2
-        self.num_processes = 2
-        self.exploit_cost = 3
-        self.exploit_probs = 1.0#0.9
-        self.privesc_cost = 3
-        self.privesc_probs = 1.0#0.9
-        self.restrictiveness = 2
-        self.r_sensitive = 100
-        self.r_user = 100
-        self.step_limit = 5000
+                 seed=None,
+                 max_num_hosts=8,
+                 min_num_hosts=5,
+                 num_os=2,
+                 num_services=2,
+                 num_processes=2,
+                 exploit_cost=3,
+                 exploit_probs=1.0,
+                 privesc_cost=3,
+                 privesc_probs=1.0,
+                 restrictiveness=2,
+                 r_sensitive=100,
+                 r_user=100,
+                 step_limit=5000):
+
+        self.max_num_hosts = max_num_hosts
+        self.min_num_hosts = min_num_hosts
+        self.num_os = num_os
+        self.num_services = num_services
+        self.num_processes = num_processes
+        self.exploit_cost = exploit_cost
+        self.exploit_probs = exploit_probs
+        self.privesc_cost = privesc_cost
+        self.privesc_probs = privesc_probs
+        self.restrictiveness = restrictiveness
+        self.r_sensitive = r_sensitive
+        self.r_user = r_user
+        self.step_limit = step_limit
+
         # Calculate the number of exploits and privescs
         self.num_exploits = self.num_os * self.num_services
         self.num_privescs = self.num_os * self.num_processes
