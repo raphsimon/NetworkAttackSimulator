@@ -194,10 +194,8 @@ class NASimGenEnv(gym.Env):
         
         if self.flat_obs:
             obs_shape = self.last_obs.shape_flat()
-            self.connection_error_obs = np.zeros(obs_shape)
         else:
             obs_shape = self.last_obs.shape()
-            self.connection_error_obs = np.zeros(obs_shape)
         obs_low, obs_high = Observation.get_space_bounds(self.scenario)
         self.observation_space = spaces.Box(
             low=obs_low, high=obs_high, shape=obs_shape
