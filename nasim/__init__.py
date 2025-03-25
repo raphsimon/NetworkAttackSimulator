@@ -199,3 +199,31 @@ for benchmark in AVAIL_BENCHMARKS:
             },
             nondeterministic=True
         )
+
+# Regsiter NASimGenEnv
+for fully_obs in [True, False]:
+    if not fully_obs:
+        name = "GenPO"
+    else:
+        name = "Gen"
+    _register(
+        id=f"{name}-v0",
+        entry_point='nasim.generalized_envs:NASimGenEnv',
+        kwargs={
+            "fully_obs": fully_obs,
+            "flat_actions": True,
+            "flat_obs": True
+        },
+        nondeterministic=True
+    )
+
+    _register(
+        id=f"{name}2D-v0",
+        entry_point='nasim.generalized_envs:NASimGenEnv',
+        kwargs={
+            "fully_obs": fully_obs,
+            "flat_actions": True,
+            "flat_obs": False
+        },
+        nondeterministic=True
+    )
