@@ -1,1 +1,1 @@
-from nasim.generalized_envs.generalization_env import NASimGenEnv
+from nasim.envs.generalization_envs.generalization_env import NASimGenEnv

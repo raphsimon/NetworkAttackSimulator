@@ -7,7 +7,7 @@ import sys
 
 import nasim
 
-from nasim.generalized_envs.generator import ModifiedScenarioGenerator
+from nasim.envs.generalization_envs.generator import ModifiedScenarioGenerator
 
 
 import nasim.scenarios

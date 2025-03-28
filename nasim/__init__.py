@@ -208,7 +208,7 @@ for fully_obs in [True, False]:
         name = "Gen"
     _register(
         id=f"{name}-v0",
-        entry_point='nasim.generalized_envs:NASimGenEnv',
+        entry_point='nasim.envs.generalization_envs:NASimGenEnv',
         kwargs={
             "fully_obs": fully_obs,
             "flat_actions": True,
@@ -219,7 +219,7 @@ for fully_obs in [True, False]:
 
     _register(
         id=f"{name}2D-v0",
-        entry_point='nasim.generalized_envs:NASimGenEnv',
+        entry_point='nasim.envs.generalization_envs:NASimGenEnv',
         kwargs={
             "fully_obs": fully_obs,
             "flat_actions": True,
