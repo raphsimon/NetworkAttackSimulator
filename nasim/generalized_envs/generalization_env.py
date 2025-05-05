@@ -148,7 +148,9 @@ class NASimGenEnv(gym.Env):
         # than it needs to be.
 
         if seed:
-            np.random.seed(seed)
+            self.rng = np.random.default_rng(seed)
+        else:
+            self.rng = np.random.default_rng()
 
         self.generator = ModifiedScenarioGenerator()
         # At the start we generate a scenario with the maximum number of hosts
@@ -167,7 +169,8 @@ class NASimGenEnv(gym.Env):
                                                 address_space_bounds=self.address_space_bounds,
                                                 r_sensitive=self.r_sensitive,
                                                 r_user=self.r_user,
-                                                step_limit=self.step_limit)
+                                                step_limit=self.step_limit,
+                                                rng=self.rng)
         self.name = self.scenario.name
         self.fully_obs = fully_obs
         self.flat_actions = flat_actions
@@ -203,7 +206,7 @@ class NASimGenEnv(gym.Env):
         self.steps = 0
         
     def _generate_new_network(self):
-        num_hosts = np.random.randint(self.min_num_hosts, self.max_num_hosts+1)
+        num_hosts = self.rng.integers(self.min_num_hosts, self.max_num_hosts+1, dtype=int)
         scenario = self.generator.generate(num_hosts=num_hosts, 
                                            num_services=self.num_services,
                                            num_os=self.num_os,
@@ -218,7 +221,8 @@ class NASimGenEnv(gym.Env):
                                            address_space_bounds=self.address_space_bounds,
                                            r_sensitive=self.r_sensitive,
                                            r_user=self.r_user,
-                                           step_limit=self.step_limit)
+                                           step_limit=self.step_limit,
+                                           rng=self.rng)
         self.current_num_hosts = len(scenario.hosts)
         # Actions per host are all the exploits, privescs, and the scans (4)
         self.network = Network(scenario)
@@ -231,7 +235,7 @@ class NASimGenEnv(gym.Env):
         self.scenario = scenario
 
     def seed(self, seed):
-        np.random.seed(seed)
+        self.rng = np.random.default_rng(seed)
 
     def step(self, action):
         """Run one step of the environment using action.

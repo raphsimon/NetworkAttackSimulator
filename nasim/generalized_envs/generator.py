@@ -88,7 +88,7 @@ class ModifiedScenarioGenerator:
                  random_goal=False,
                  base_host_value=1,
                  host_discovery_value=1,
-                 seed=None,
+                 rng=None,
                  name=None,
                  step_limit=None,
                  address_space_bounds=None,
@@ -184,8 +184,10 @@ class ModifiedScenarioGenerator:
         assert 0 < alpha_H and 0 < alpha_V and 0 < lambda_V
         assert 0 < restrictiveness
 
-        if seed is not None:
-            np.random.seed(seed)
+        if rng is not None:
+            self.rng = rng
+        else:
+            self.rng = np.random.default_rng()
 
         if num_exploits is None:
             num_exploits = num_services
@@ -373,7 +375,7 @@ class ModifiedScenarioGenerator:
 
     def _get_action_probs(self, num_actions, action_probs):
         if action_probs is None:
-            action_probs = np.random.random_sample(num_actions)
+            action_probs = self.rng.random(num_actions)
         elif action_probs == 'mixed':
             # success probability of low, med, high attack complexity
             if num_actions == 1:
@@ -384,7 +386,7 @@ class ModifiedScenarioGenerator:
             else:
                 levels = [0.3, 0.6, 0.9]
                 probs = [0.2, 0.4, 0.4]
-            action_probs = np.random.choice(levels, num_actions, p=probs)
+            action_probs = self.rng.choice(levels, num_actions, p=probs)
         elif type(action_probs) is list:
             assert len(action_probs) == num_actions, \
                 ("Length of action probability list must equal number of"
@@ -410,8 +412,8 @@ class ModifiedScenarioGenerator:
         # second sensitive host in USER network
         if random_goal and len(self.subnets) > SENSITIVE:
             # randomly choose user host to be goal
-            subnet_id = np.random.randint(USER, len(self.subnets))
-            host_id = np.random.randint(0, self.subnets[subnet_id])
+            subnet_id = self.rng.integers(USER, len(self.subnets), dtype=int)
+            host_id = self.rng.integers(0, self.subnets[subnet_id], dtype=int)
             sensitive_hosts[(subnet_id, host_id)] = r_user
         else:
             # second last host in USER network is goal
@@ -428,13 +430,13 @@ class ModifiedScenarioGenerator:
             if subnet == u.INTERNET:
                 continue
             for h in range(size):
-                srv_cfg = srv_config_set[np.random.choice(num_srv_configs)]
+                srv_cfg = srv_config_set[self.rng.choice(num_srv_configs)]
                 srv_cfg = self._convert_to_service_map(srv_cfg)
 
-                proc_cfg = proc_config_set[np.random.choice(num_proc_configs)]
+                proc_cfg = proc_config_set[self.rng.choice(num_proc_configs)]
                 proc_cfg = self._convert_to_process_map(proc_cfg)
 
-                os = np.random.choice(self.os)
+                os = self.rng.choice(self.os)
                 os_cfg = self._convert_to_os_map(os)
 
                 address = (subnet, h)
@@ -555,7 +557,7 @@ class ModifiedScenarioGenerator:
         using a Nested Dirichlet Process
         """
         if host_num == 0 \
-           or np.random.rand() < (alpha_H / (alpha_H + host_num - 1)):
+           or self.rng.random() < (alpha_H / (alpha_H + host_num - 1)):
             # if first host or with prob proportional to alpha_H
             # choose new config
             new_config = self._sample_config(
@@ -563,7 +565,7 @@ class ModifiedScenarioGenerator:
             )
         else:
             # sample uniformly from previous sampled configs
-            new_config = prev_configs[np.random.choice(len(prev_configs))]
+            new_config = prev_configs[self.rng.choice(len(prev_configs))]
         prev_configs.append(new_config)
         return new_config
 
@@ -601,17 +603,17 @@ class ModifiedScenarioGenerator:
 
         # randomly get number of times to sample using poission dist with
         # minimum 1 option choice
-        n = max(np.random.poisson(lambda_V), 1)
+        n = max(self.rng.poisson(lambda_V), 1)
 
         # draw n samples from Dirichlet Process
         # (alpha_V, uniform dist of services)
         for i in range(n):
-            if i == 0 or np.random.rand() < (alpha_V / (alpha_V + i - 1)):
+            if i == 0 or self.rng.random() < (alpha_V / (alpha_V + i - 1)):
                 # draw randomly from uniform dist over services
-                x = np.random.randint(0, num_options)
+                x = self.rng.integers(0, num_options, dtype=int)
             else:
                 # draw uniformly at random from previous choices
-                x = np.random.choice(prev_vals)
+                x = self.rng.choice(prev_vals)
             new_cfg[x] = True
             prev_vals.append(x)
         return new_cfg
@@ -620,12 +622,12 @@ class ModifiedScenarioGenerator:
         """Sample single choice using dirichlet process """
         # sample an os from Dirichlet Process (alpha_V, uniform dist of OSs)
         if len(prev_vals) == 0 \
-           or np.random.rand() < (alpha_V / (alpha_V - 1)):
+           or self.rng.random() < (alpha_V / (alpha_V - 1)):
             # draw randomly from uniform dist over services
-            choice = np.random.choice(choices)
+            choice = self.rng.choice(choices)
         else:
             # draw uniformly at random from previous choices
-            choice = np.random.choice(prev_vals)
+            choice = self.rng.choice(prev_vals)
         prev_vals.append(choice)
         return choice
 
@@ -678,7 +680,7 @@ class ModifiedScenarioGenerator:
         for subnet, size in enumerate(self.subnets):
             if subnet in vulnerable_subnets or subnet == u.INTERNET:
                 continue
-            host_num = np.random.randint(size)
+            host_num = self.rng.integers(size, dtype=int)
             host = self.hosts[(subnet, host_num)]
             self._update_host_to_vulnerable(host)
             vulnerable_subnets.add(subnet)
@@ -751,7 +753,7 @@ class ModifiedScenarioGenerator:
             if len(valid_e) == 0:
                 return False, None
 
-        e_def = np.random.choice(valid_e)
+        e_def = self.rng.choice(valid_e)
         host.services[e_def[u.EXPLOIT_SERVICE]] = True
         if e_def[u.EXPLOIT_OS] is not None and not os_constraint:
             self._update_host_os(host, e_def[u.EXPLOIT_OS])
@@ -773,7 +775,7 @@ class ModifiedScenarioGenerator:
             if len(valid_pe) == 0:
                 return False, None
 
-        pe_def = np.random.choice(valid_pe)
+        pe_def = self.rng.choice(valid_pe)
         host.processes[pe_def[u.PRIVESC_PROCESS]] = True
         if pe_def[u.PRIVESC_OS] is not None and not os_constraint:
             self._update_host_os(host, pe_def[u.PRIVESC_OS])
@@ -845,14 +847,14 @@ class ModifiedScenarioGenerator:
                     firewall[(src, dest)] = dest_avail.copy()
                     continue
                 # add at least one service to allowed service
-                dest_allowed = np.random.choice(list(dest_avail))
+                dest_allowed = self.rng.choice(list(dest_avail))
                 # for dest subnet choose available services upto
                 # restrictiveness limit or all services
                 dest_avail.remove(dest_allowed)
                 allowed = set()
                 allowed.add(dest_allowed)
                 while len(allowed) < restrictiveness:
-                    dest_allowed = np.random.choice(list(dest_avail))
+                    dest_allowed = self.rng.choice(list(dest_avail))
                     if dest_allowed not in allowed:
                         allowed.add(dest_allowed)
                         dest_avail.remove(dest_allowed)
