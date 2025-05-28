@@ -7,7 +7,7 @@ import sys
 
 import nasim
 
-from nasim.generalized_envs.generator import ModifiedScenarioGenerator
+from nasim.stochastic_envs.generator import ModifiedScenarioGenerator
 
 
 import nasim.scenarios
@@ -78,7 +78,7 @@ Some discussion points:
     action for every OS-process combination.
 """
 
-class NASimGenEnv(gym.Env):
+class StochNASimEnv(gym.Env):
     """This wrapper serves the purpose to create an environment that allows
     the agent to generalize of different size networks, with hosts that have
     the same number of services and processes.
@@ -692,7 +692,7 @@ if __name__ == '__main__':
 
     sys.exit(0)
 
-    env = gym.make('GenPO-v0')
+    env = gym.make('StochPO-v0')
 
     print("Observation space upron creation:", env.observation_space.shape)
     print("Action space upon creation:", env.action_space)

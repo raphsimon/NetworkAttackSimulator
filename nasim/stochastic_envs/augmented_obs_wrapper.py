@@ -84,9 +84,9 @@ class AugmentedObsWrapper(gym.Wrapper):
 
 if __name__ == '__main__':
     
-    from generalization_env import NASimGenEnv
+    from nasim.stochastic_envs.stoch_env import StochNASimEnv
 
-    env = NASimGenEnv()
+    env = StochNASimEnv()
     env = AugmentedObsWrapper(env)
 
     env.reset()
