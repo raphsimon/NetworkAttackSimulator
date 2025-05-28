@@ -1,5 +1,4 @@
 import pathlib
-
 from setuptools import setup, find_packages
 
 extras = {
@@ -15,30 +14,26 @@ extras = {
         'pytest>=5.4'
     ]
 }
-
 extras['all'] = [item for group in extras.values() for item in group]
 
-
 def get_version():
-    """Gets the posggym version."""
+    """Gets the nasim version."""
     path = pathlib.Path(__file__).absolute().parent / "nasim" / "__init__.py"
     content = path.read_text()
-
     for line in content.splitlines():
         if line.startswith("__version__"):
             return line.strip().split()[-1].strip().strip('"')
     raise RuntimeError("bad version data in __init__.py")
 
-
 setup(
     name='nasim',
     version=get_version(),
-    url="https://networkattacksimulator.readthedocs.io",
+    url="https://anonymous-repo.example.com",  # Changed from readthedocs URL
     description="A simple and fast simulator for remote network pen-testing",
     long_description=open('README.rst').read(),
     long_description_content_type='text/x-rst',
-    author="Jonathon Schwartz",
-    author_email="Jonathon.Schwartz@anu.edu.au",
+    author="Anonymous",                        # Anonymized
+    author_email="anonymous@example.com",      # Anonymized
     license="MIT",
     packages=[
         package for package in find_packages()
@@ -58,8 +53,7 @@ setup(
         'nasim': ['scenarios/benchmark/*.yaml']
     },
     project_urls={
-        'Documentation': "https://networkattacksimulator.readthedocs.io",
-        'Source': "https://github.com/Jjschwartz/NetworkAttackSimulator/",
+        # Removed identifying URLs
     },
     classifiers=[
         'Development Status :: 3 - Alpha',

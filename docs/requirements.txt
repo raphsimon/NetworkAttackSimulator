@@ -1,4 +1,0 @@
-nasim
-sphinx
-sphinx-autobuild
-sphinx-rtd-theme
