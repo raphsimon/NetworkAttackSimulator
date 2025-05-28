@@ -2,7 +2,7 @@ import gymnasium as gym
 from gymnasium.envs.registration import register
 
 from nasim.envs import NASimEnv
-from nasim.generalized_envs import NASimGenEnv
+from nasim.stochastic_envs import StochNASimEnv
 from nasim.scenarios.benchmark import AVAIL_BENCHMARKS
 from nasim.scenarios import \
     make_benchmark_scenario, load_scenario, generate_scenario
@@ -215,12 +215,12 @@ for benchmark in AVAIL_BENCHMARKS:
 # Regsiter NASimGenEnv
 for fully_obs in [True, False]:
     if not fully_obs:
-        name = "GenPO"
+        name = "StochPO"
     else:
-        name = "Gen"
+        name = "Stoch"
     _register(
         id=f"{name}-v0",
-        entry_point='nasim.generalized_envs:NASimGenEnv',
+        entry_point='nasim.stochastic_envs:StochNASimEnv',
         kwargs={
             "fully_obs": fully_obs,
             "flat_actions": True,
@@ -231,7 +231,7 @@ for fully_obs in [True, False]:
 
     _register(
         id=f"{name}2D-v0",
-        entry_point='nasim.generalized_envs:NASimGenEnv',
+        entry_point='nasim.stochastic_envs:StochNASimEnv',
         kwargs={
             "fully_obs": fully_obs,
             "flat_actions": True,
