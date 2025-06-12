@@ -1,6 +1,6 @@
 """ The main Environment class for Mulit-Objective NASim: MONASimEnv.
 
-The NASimEnv class is the main interface for agents interacting with NASim.
+The MONASimEnv class is the main interface for multi-objective agents interacting with NASim.
 """
 import gymnasium as gym
 from gymnasium import spaces
@@ -104,7 +104,8 @@ class MONASimEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=obs_low, high=obs_high, shape=obs_shape
         )
-
+        self.reward_space = spaces.Discrete(3)
+        self.reward_dim = 3  # impact, efficiency, info_gathering
         self.steps = 0
 
     def seed(self, seed):
