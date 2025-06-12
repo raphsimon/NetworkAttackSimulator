@@ -1,6 +1,6 @@
 import numpy as np
 
-from nasim.envs.action import ActionResult
+from nasim.envs.action import ActionResult, MultiObjectiveActionResult
 from nasim.envs.utils import get_minimal_hops_to_goal, min_subnet_depth, AccessLevel
 
 # column in topology adjacency matrix that represents connection between
@@ -127,6 +127,120 @@ class Network:
         obs = ActionResult(
             True,
             discovery_reward,
+            discovered=discovered,
+            newly_discovered=newly_discovered
+        )
+        return next_state, obs
+
+    def perform_multi_objective_action(self, state, action):
+        """Perform the given Action against the network.
+
+        Arguments
+        ---------
+        state : State
+            the current state
+        action : Action
+            the action to perform
+
+        Returns
+        -------
+        State
+            the state after the action is performed
+        ActionObservation
+            the result from the action
+        """
+        tgt_subnet, tgt_id = action.target
+        assert 0 < tgt_subnet < len(self.subnets)
+        assert tgt_id <= self.subnets[tgt_subnet]
+
+        next_state = state.copy()
+
+        if action.is_noop():
+            return next_state, MultiObjectiveActionResult(success=True, 
+                                                          objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0})
+
+        if not state.host_reachable(action.target) \
+           or not state.host_discovered(action.target):
+            result = MultiObjectiveActionResult(success=False,
+                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0}, 
+                                                connection_error=True)
+            return next_state, result
+
+        has_req_permission = self.has_required_remote_permission(state, action)
+        if action.is_remote() and not has_req_permission:
+            result = MultiObjectiveActionResult(success=False, 
+                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0}, 
+                                                permission_error=True)
+            return next_state, result
+
+        if action.is_exploit() \
+           and not self.traffic_permitted(
+                    state, action.target, action.service
+           ):
+            result = MultiObjectiveActionResult(success=False, 
+                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0}, 
+                                                permission_error=True)
+            return next_state, result
+
+        host_compromised = state.host_compromised(action.target)
+        if action.is_privilege_escalation() and not host_compromised:
+            result = MultiObjectiveActionResult(success=False, 
+                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0},
+                                                connection_error=True)
+            return next_state, result
+
+        if action.is_exploit() and host_compromised:
+            # host already compromised so exploits don't fail due to randomness
+            pass
+        elif np.random.rand() > action.prob:
+            return next_state, MultiObjectiveActionResult(success=False, 
+                                                          objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0},
+                                                          undefined_error=True)
+
+        if action.is_subnet_scan():
+            return self._perform_multi_objective_subnet_scan(next_state, action)
+
+        t_host = state.get_host(action.target)
+        if t_host.sensitive:
+            host_value = self.sensitive_hosts.get(action.target, 0)
+        else:
+            host_value = 5
+        next_host_state, action_obs = t_host.perform_multi_objective_action(action, host_value)
+        next_state.update_host(action.target, next_host_state)
+        self._update(next_state, action, action_obs)
+        return next_state, action_obs
+
+    def _perform_multi_objective_subnet_scan(self, next_state, action):
+        if not next_state.host_compromised(action.target):
+            result = MultiObjectiveActionResult(success=False,
+                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0},
+                                                connection_error=True)
+            return next_state, result
+
+        if not next_state.host_has_access(action.target, action.req_access):
+            result = MultiObjectiveActionResult(success=False, 
+                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0}, 
+                                                permission_error=True)
+            return next_state, result
+
+        discovered = {}
+        newly_discovered = {}
+        discovery_reward = 0.0
+        target_subnet = action.target[0]
+        for h_addr in self.address_space:
+            newly_discovered[h_addr] = False
+            discovered[h_addr] = False
+            if self.subnets_connected(target_subnet, h_addr[0]):
+                host = next_state.get_host(h_addr)
+                discovered[h_addr] = True
+                if not host.discovered:
+                    newly_discovered[h_addr] = True
+                    host.discovered = True
+                    discovery_reward += host.discovery_value
+
+        obs = MultiObjectiveActionResult(
+            success=True,
+            objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': discovery_reward},
             discovered=discovered,
             newly_discovered=newly_discovered
         )

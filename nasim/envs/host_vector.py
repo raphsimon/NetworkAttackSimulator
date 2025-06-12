@@ -7,7 +7,7 @@ in the NASim environment.
 import numpy as np
 
 from nasim.envs.utils import AccessLevel
-from nasim.envs.action import ActionResult
+from nasim.envs.action import ActionResult, MultiObjectiveActionResult
 
 
 class HostVector:
@@ -299,6 +299,103 @@ class HostVector:
 
         # action failed due to host config not meeting preconditions
         return next_state, ActionResult(False, 0.0)
+
+    def perform_multi_objective_action(self, action, host_value):
+        """Perform given action against this host
+
+        Arguments
+        ---------
+        action : Action
+            the action to perform
+
+        Returns
+        -------
+        HostVector
+            the resulting state of host after action
+        ActionObservation
+            the result from the action
+        """
+        next_state = self.copy()
+        if action.is_service_scan():
+            result = MultiObjectiveActionResult(success=True,
+                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 1.0 * len(self.services)}, 
+                                                services=self.services)
+            return next_state, result
+
+        if action.is_os_scan():
+            return next_state, MultiObjectiveActionResult(success=True,
+                                                          objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 1.0},
+                                                          os=self.os)
+
+        if action.is_exploit():
+            if self.is_running_service(action.service) and \
+               (action.os is None or self.is_running_os(action.os)):
+                # service and os is present so exploit is successful
+                value = 0.0
+                next_state.compromised = True
+                if not self.access == AccessLevel.ROOT:
+                    # ensure a machine is not rewarded twice
+                    # and access doesn't decrease
+                    next_state.access = action.access
+                    if action.access == AccessLevel.ROOT:
+                        value = host_value
+                # TODO: Verify that we give out the correct reward
+                result = MultiObjectiveActionResult(
+                    success=True,
+                    objective_values={'impact': value, 'efficiency': action.cost, 'info_gathering': 0.0},
+                    services=self.services,
+                    os=self.os,
+                    access=action.access
+                )
+                return next_state, result
+
+        # following actions are on host so require correct access
+        if not (self.compromised and action.req_access <= self.access):
+            result = MultiObjectiveActionResult(success=False,
+                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0}, 
+                                                permission_error=True)
+            return next_state, result
+
+        if action.is_process_scan():
+            result = MultiObjectiveActionResult(
+                success=True,
+                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 1.0 * len(self.processes)},
+                access=self.access,
+                processes=self.processes
+            )
+            return next_state, result
+
+        if action.is_privilege_escalation():
+            has_proc = (
+                action.process is None
+                or self.is_running_process(action.process)
+            )
+            has_os = (
+                action.os is None or self.is_running_os(action.os)
+            )
+            if has_proc and has_os:
+                # host compromised and proc and os is present
+                # so privesc is successful
+                value = 0.0
+                if not self.access == AccessLevel.ROOT:
+                    # ensure a machine is not rewarded twice
+                    # and access doesn't decrease
+                    next_state.access = action.access
+                    if action.access == AccessLevel.ROOT:
+                        value = host_value
+
+                result = MultiObjectiveActionResult(
+                    success=True,
+                objective_values={'impact': value, 'efficiency': action.cost, 'info_gathering': 0.0},
+                    processes=self.processes,
+                    os=self.os,
+                    access=action.access
+                )
+                return next_state, result
+
+        # action failed due to host config not meeting preconditions
+        return next_state, MultiObjectiveActionResult(success=False, 
+                                                      objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0})
 
     def observe(self,
                 address=False,
