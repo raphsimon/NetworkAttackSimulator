@@ -2,7 +2,7 @@
 
 This module contains the different action classes that are used
 to implement actions within a NASim environment, along within the
-different ActionSpace classes, and the ActionResult class.
+different ActionSpace classes, and the MultiObjectiveActionResult class.
 
 Notes
 -----
@@ -598,6 +598,84 @@ class ActionResult:
         return dict(
             success=self.success,
             value=self.value,
+            services={} if self.services is None else self.services,
+            os={} if self.os is None else self.os,
+            processes={} if self.processes is None else self.processes,
+            access={} if self.access is None else self.access,
+            discovered={} if self.discovered is None else self.discovered,
+            connection_error=self.connection_error,
+            permission_error=self.permission_error,
+            undefined_error=self.undefined_error,
+            newly_discovered={} if self.newly_discovered is None else self.newly_discovered
+        )
+
+    def __str__(self):
+        output = ["ActionObservation:"]
+        for k, val in self.info().items():
+            output.append(f"  {k}={val}")
+        return "\n".join(output)
+
+
+@dataclass
+class MultiObjectiveActionResult:
+    """A dataclass for storing the results of an Action.
+
+    These results are then used to update the full state and observation.
+
+    ...
+
+    Attributes
+    ----------
+    success : bool
+        True if exploit/scan was successful, False otherwise
+    value : float
+        value gained from action. Is the value of the host if successfuly
+        exploited, otherwise 0
+    services : dict
+        services identified by action.
+    os : dict
+        OS identified by action
+    processes : dict
+        processes identified by action
+    access : dict
+        access gained by action
+    discovered : dict
+        host addresses discovered by action
+    connection_error : bool
+        True if action failed due to connection error (e.g. could
+        not reach target)
+    permission_error : bool
+        True if action failed due to a permission error (e.g. incorrect access
+        level to perform action)
+    undefined_error : bool
+        True if action failed due to an undefined error (e.g. random exploit
+        failure)
+    newly_discovered : dict
+        host addresses discovered for the first time by action
+    """
+    success: bool
+    objective_values: dict = None # Keys should be: 'impact', 'effiency', 'info_gathering'
+    services: dict = None
+    os: dict = None
+    processes: dict = None
+    access: dict = None
+    discovered: dict = None
+    connection_error: bool = False
+    permission_error: bool = False
+    undefined_error: bool = False
+    newly_discovered: dict = None # Does this change anything if this is dict by default and not None?
+
+    def info(self):
+        """Get results as dict
+
+        Returns
+        -------
+        dict
+            action results information
+        """
+        return dict(
+            success=self.success,
+            objective_values=self.objective_values,
             services={} if self.services is None else self.services,
             os={} if self.os is None else self.os,
             processes={} if self.processes is None else self.processes,
