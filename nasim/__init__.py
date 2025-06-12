@@ -3,6 +3,7 @@ from gymnasium.envs.registration import register
 
 from nasim.envs import NASimEnv
 from nasim.stochastic_envs import StochNASimEnv
+from nasim.morl_env import MONASimEnv, MONASimGymEnv
 from nasim.scenarios.benchmark import AVAIL_BENCHMARKS
 from nasim.scenarios import \
     make_benchmark_scenario, load_scenario, generate_scenario
@@ -16,6 +17,7 @@ def make_benchmark(scenario_name,
                    fully_obs=False,
                    flat_actions=True,
                    flat_obs=True,
+                   multi_objective=False,
                    render_mode=None):
     """Make a new benchmark NASim environment.
 
@@ -44,7 +46,7 @@ def make_benchmark(scenario_name,
 
     Raises
     ------
-    NotImplementederror
+    NotImplementedError
         if scenario_name does not match any implemented benchmark scenarios.
     """
     env_kwargs = {"fully_obs": fully_obs,
@@ -52,7 +54,7 @@ def make_benchmark(scenario_name,
                   "flat_obs": flat_obs,
                   "render_mode": render_mode}
     scenario = make_benchmark_scenario(scenario_name, seed)
-    return NASimEnv(scenario, **env_kwargs)
+    return NASimEnv(scenario, **env_kwargs) if not multi_objective else MONASimEnv(scenario, **env_kwargs)
 
 
 def load(path,
@@ -122,13 +124,14 @@ def generate(num_hosts,
     render_mode : str, optional
             The render mode to use for the environment.
     params : dict, optional
-        generator params (see :class:`ScenarioGenertor` for full list)
+        generator params (see :class:`ScenarioGenerator` for full list)
 
     Returns
     -------
     NASimEnv
         a new environment object
     """
+    print("Generating scenario with params:", params)
     env_kwargs = {"fully_obs": fully_obs,
                   "flat_actions": flat_actions,
                   "flat_obs": flat_obs,
@@ -146,6 +149,8 @@ def _register(id, entry_point, kwargs, nondeterministic, force=True):
         if not force:
             return
         del gym.envs.registry[id]
+    print(f"Registering environment: {id}")
+    print(kwargs)
     register(
         id=id,
         entry_point=entry_point,
@@ -240,4 +245,65 @@ for fully_obs in [True, False]:
         nondeterministic=True
     )
 
-__version__ = "0.14.0"
+
+# Regsiter Multi-Objective NASim: MONASimEnv
+for benchmark in AVAIL_BENCHMARKS:
+    # PO - partially observable
+    # 2D - use 2D Obs
+    # VA - use param actions
+    # tiny should yield Tiny and tiny-small should yield TinySmall
+    for fully_obs in [True, False]:
+        name = ''.join([g.capitalize() for g in benchmark.split("-")])
+        name = 'MO' + name
+        if not fully_obs:
+            name = f"{name}PO"
+
+        _register(
+            id=f"{name}-v0",
+            entry_point='nasim.morl_env:MONASimGymEnv',
+            kwargs={
+                "scenario": benchmark,
+                "fully_obs": fully_obs,
+                "flat_actions": True,
+                "flat_obs": True
+            },
+            nondeterministic=True
+        )
+
+        _register(
+            id=f"{name}2D-v0",
+            entry_point='nasim.morl_env:MONASimGymEnv',
+            kwargs={
+                "scenario": benchmark,
+                "fully_obs": fully_obs,
+                "flat_actions": True,
+                "flat_obs": False
+            },
+            nondeterministic=True
+        )
+
+        _register(
+            id=f"{name}VA-v0",
+            entry_point='nasim.morl_env:MONASimGymEnv',
+            kwargs={
+                "scenario": benchmark,
+                "fully_obs": fully_obs,
+                "flat_actions": False,
+                "flat_obs": True
+            },
+            nondeterministic=True
+        )
+
+        _register(
+            id=f"{name}2DVA-v0",
+            entry_point='nasim.morl_env:MONASimGymEnv',
+            kwargs={
+                "scenario": benchmark,
+                "fully_obs": fully_obs,
+                "flat_actions": False,
+                "flat_obs": False
+            },
+            nondeterministic=True
+        )
+
+__version__ = "0.15.0"
