@@ -79,8 +79,6 @@ class MONASimEnv(gym.Env):
         render_mode : str, optional
             The render mode to use for the environment.
         """
-        print('Scenario:', scenario)
-        print('Scenario type:', type(scenario))
         self.name = scenario.name
         self.scenario = scenario
         self.fully_obs = fully_obs

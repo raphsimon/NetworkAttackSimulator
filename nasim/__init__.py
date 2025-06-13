@@ -149,8 +149,6 @@ def _register(id, entry_point, kwargs, nondeterministic, force=True):
         if not force:
             return
         del gym.envs.registry[id]
-    print(f"Registering environment: {id}")
-    print(kwargs)
     register(
         id=id,
         entry_point=entry_point,
