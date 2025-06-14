@@ -318,13 +318,13 @@ class HostVector:
         next_state = self.copy()
         if action.is_service_scan():
             result = MultiObjectiveActionResult(success=True,
-                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 1.0 * len(self.services)}, 
+                                                objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 1.0 * len(self.services)}, 
                                                 services=self.services)
             return next_state, result
 
         if action.is_os_scan():
             return next_state, MultiObjectiveActionResult(success=True,
-                                                          objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 1.0},
+                                                          objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 1.0},
                                                           os=self.os)
 
         if action.is_exploit():
@@ -342,7 +342,7 @@ class HostVector:
                 # TODO: Verify that we give out the correct reward
                 result = MultiObjectiveActionResult(
                     success=True,
-                    objective_values={'impact': value, 'efficiency': action.cost, 'info_gathering': 0.0},
+                    objective_values={'impact': value, 'efficiency': -action.cost, 'info_gathering': 0.0},
                     services=self.services,
                     os=self.os,
                     access=action.access
@@ -352,14 +352,14 @@ class HostVector:
         # following actions are on host so require correct access
         if not (self.compromised and action.req_access <= self.access):
             result = MultiObjectiveActionResult(success=False,
-                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0}, 
+                                                objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 0.0}, 
                                                 permission_error=True)
             return next_state, result
 
         if action.is_process_scan():
             result = MultiObjectiveActionResult(
                 success=True,
-                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 1.0 * len(self.processes)},
+                objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 1.0 * len(self.processes)},
                 access=self.access,
                 processes=self.processes
             )
@@ -386,7 +386,7 @@ class HostVector:
 
                 result = MultiObjectiveActionResult(
                     success=True,
-                objective_values={'impact': value, 'efficiency': action.cost, 'info_gathering': 0.0},
+                objective_values={'impact': value, 'efficiency': -action.cost, 'info_gathering': 0.0},
                     processes=self.processes,
                     os=self.os,
                     access=action.access
@@ -395,7 +395,7 @@ class HostVector:
 
         # action failed due to host config not meeting preconditions
         return next_state, MultiObjectiveActionResult(success=False, 
-                                                      objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0})
+                                                      objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 0.0})
 
     def observe(self,
                 address=False,

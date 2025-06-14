@@ -157,19 +157,19 @@ class Network:
 
         if action.is_noop():
             return next_state, MultiObjectiveActionResult(success=True, 
-                                                          objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0})
+                                                          objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 0.0})
 
         if not state.host_reachable(action.target) \
            or not state.host_discovered(action.target):
             result = MultiObjectiveActionResult(success=False,
-                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0}, 
+                                                objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 0.0}, 
                                                 connection_error=True)
             return next_state, result
 
         has_req_permission = self.has_required_remote_permission(state, action)
         if action.is_remote() and not has_req_permission:
             result = MultiObjectiveActionResult(success=False, 
-                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0}, 
+                                                objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 0.0}, 
                                                 permission_error=True)
             return next_state, result
 
@@ -178,14 +178,14 @@ class Network:
                     state, action.target, action.service
            ):
             result = MultiObjectiveActionResult(success=False, 
-                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0}, 
+                                                objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 0.0}, 
                                                 permission_error=True)
             return next_state, result
 
         host_compromised = state.host_compromised(action.target)
         if action.is_privilege_escalation() and not host_compromised:
             result = MultiObjectiveActionResult(success=False, 
-                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0},
+                                                objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 0.0},
                                                 connection_error=True)
             return next_state, result
 
@@ -194,7 +194,7 @@ class Network:
             pass
         elif np.random.rand() > action.prob:
             return next_state, MultiObjectiveActionResult(success=False, 
-                                                          objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0},
+                                                          objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 0.0},
                                                           undefined_error=True)
 
         if action.is_subnet_scan():
@@ -213,13 +213,13 @@ class Network:
     def _perform_multi_objective_subnet_scan(self, next_state, action):
         if not next_state.host_compromised(action.target):
             result = MultiObjectiveActionResult(success=False,
-                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0},
+                                                objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 0.0},
                                                 connection_error=True)
             return next_state, result
 
         if not next_state.host_has_access(action.target, action.req_access):
             result = MultiObjectiveActionResult(success=False, 
-                                                objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': 0.0}, 
+                                                objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': 0.0}, 
                                                 permission_error=True)
             return next_state, result
 
@@ -240,7 +240,7 @@ class Network:
 
         obs = MultiObjectiveActionResult(
             success=True,
-            objective_values={'impact': 0.0, 'efficiency': action.cost, 'info_gathering': discovery_reward},
+            objective_values={'impact': 0.0, 'efficiency': -action.cost, 'info_gathering': discovery_reward},
             discovered=discovered,
             newly_discovered=newly_discovered
         )
