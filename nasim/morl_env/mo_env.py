@@ -104,8 +104,20 @@ class MONASimEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=obs_low, high=obs_high, shape=obs_shape
         )
-        self.reward_space = spaces.Discrete(3)
-        self.reward_dim = 3  # impact, efficiency, info_gathering
+
+        #self.reward_dim = 3  # impact, efficiency, info_gathering
+        #self.reward_space = spaces.Box(
+        #    low=np.array([0, -3, 0]),
+        #    high=np.array([100, 0, 5]), # Max reward for info gathering is 5 (max number of hosts in a subnet)
+        #    dtype=np.float32,
+        #)
+
+        self.reward_dim = 2  # impact and efficiency
+        self.reward_space = spaces.Box(
+            low=np.array([0, -3]),
+            high=np.array([100, 0]),
+            dtype=np.float32,
+        )
         self.steps = 0
 
     def seed(self, seed):
@@ -192,8 +204,8 @@ class MONASimEnv(gym.Env):
 
         # Return an array for multi-objective reward
         reward = np.array([objective_values['impact'],
-                           objective_values['efficiency'],
-                           objective_values['info_gathering']],
+                           objective_values['efficiency']],
+                           #objective_values['info_gathering']],
                           dtype=np.float32)
 
         return obs, reward, done, step_limit_reached, info
