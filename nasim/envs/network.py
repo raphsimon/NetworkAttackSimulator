@@ -204,7 +204,7 @@ class Network:
         if t_host.sensitive:
             host_value = self.sensitive_hosts.get(action.target, 0)
         else:
-            host_value = 5
+            host_value = 20
         next_host_state, action_obs = t_host.perform_multi_objective_action(action, host_value)
         next_state.update_host(action.target, next_host_state)
         self._update(next_state, action, action_obs)

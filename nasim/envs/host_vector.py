@@ -339,6 +339,8 @@ class HostVector:
                     next_state.access = action.access
                     if action.access == AccessLevel.ROOT:
                         value = host_value
+                    elif action.access == AccessLevel.USER:
+                        value = host_value / 2
                 # TODO: Verify that we give out the correct reward
                 result = MultiObjectiveActionResult(
                     success=True,
@@ -383,10 +385,12 @@ class HostVector:
                     next_state.access = action.access
                     if action.access == AccessLevel.ROOT:
                         value = host_value
+                    elif action.access == AccessLevel.USER:
+                        value = host_value / 2
 
                 result = MultiObjectiveActionResult(
                     success=True,
-                objective_values={'impact': value, 'efficiency': -action.cost, 'info_gathering': 0.0},
+                    objective_values={'impact': value, 'efficiency': -action.cost, 'info_gathering': 0.0},
                     processes=self.processes,
                     os=self.os,
                     access=action.access

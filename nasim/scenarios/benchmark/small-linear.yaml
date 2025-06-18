@@ -27,8 +27,8 @@ topology: [[ 1, 1, 0, 0, 0, 0, 1],  # 0 connected to 1 and 6
            [ 0, 0, 0, 0, 1, 1, 1],  # 5 connected to 4 and 6
            [ 1, 0, 0, 0, 0, 1, 1]]  # 6 connected to 5 and 0
 sensitive_hosts:
-  (3, 0): 100
-  (4, 0): 100
+  (3, 0): 50
+  (4, 0): 50
 os:
   - linux
   - windows
