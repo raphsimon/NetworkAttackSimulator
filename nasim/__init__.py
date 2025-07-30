@@ -2,7 +2,7 @@ import gymnasium as gym
 from gymnasium.envs.registration import register
 
 from nasim.envs import NASimEnv
-from nasim.stochastic_envs import StochNASimEnv
+from nasim.stochastic_envs import StochNASimEnv, MultiTaskNASimEnv
 from nasim.morl_env import MONASimEnv, MONASimGymEnv
 from nasim.scenarios.benchmark import AVAIL_BENCHMARKS
 from nasim.scenarios import \
@@ -215,7 +215,7 @@ for benchmark in AVAIL_BENCHMARKS:
             nondeterministic=True
         )
 
-# Regsiter NASimGenEnv
+# Regsiter StochNASimEnv
 for fully_obs in [True, False]:
     if not fully_obs:
         name = "StochPO"
@@ -243,6 +243,34 @@ for fully_obs in [True, False]:
         nondeterministic=True
     )
 
+
+# Regsiter MultiTaskNASimEnv
+for fully_obs in [True, False]:
+    if not fully_obs:
+        name = "MultiTaskPO"
+    else:
+        name = "MultiTask"
+    _register(
+        id=f"{name}-v0",
+        entry_point='nasim.stochastic_envs:MultiTaskNASimEnv',
+        kwargs={
+            "fully_obs": fully_obs,
+            "flat_actions": True,
+            "flat_obs": True
+        },
+        nondeterministic=True
+    )
+
+    _register(
+        id=f"{name}2D-v0",
+        entry_point='nasim.stochastic_envs:MultiTaskNASimEnv',
+        kwargs={
+            "fully_obs": fully_obs,
+            "flat_actions": True,
+            "flat_obs": False
+        },
+        nondeterministic=True
+    )
 
 # Regsiter Multi-Objective NASim: MONASimEnv
 for benchmark in AVAIL_BENCHMARKS:
@@ -304,4 +332,4 @@ for benchmark in AVAIL_BENCHMARKS:
             nondeterministic=True
         )
 
-__version__ = "0.15.0"
+__version__ = "0.15.1"
