@@ -60,7 +60,11 @@ class ModifiedScenarioGenerator:
     2. if ``uniform=False`` host configurations are chosen to be correlated
        (see :ref:`correlated_configurations` for explanation)
 
-
+    **Differeneces to the original ScenarioGenerator**
+    - We replaced the old seeding with NumPy's new RNG API for more consistency.
+    - We generate one Exploit and one Privilege Escalation action per serive and
+      OS, and process and OS combination respectively. This is to ensure that we
+      have the same action space across different generated environments.
     """
 
     def generate(self,
