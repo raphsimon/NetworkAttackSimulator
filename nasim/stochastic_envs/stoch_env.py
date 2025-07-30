@@ -1,87 +1,38 @@
+import sys
 import random
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 
-import sys
 
 import nasim
-
 from nasim.stochastic_envs.generator import ModifiedScenarioGenerator
-
-
+from nasim.stochastic_envs.actions_padded import FlatActionSpacePadded
 import nasim.scenarios
 from nasim.envs.state import State
 from nasim.envs.render import Viewer
 from nasim.envs.network import Network
 from nasim.envs.observation import Observation
-from nasim.envs.action import load_action_list
-from nasim.envs.action import NoOp, Action, ActionResult, FlatActionSpace
-
-
-class FlatActionSpacePadded(spaces.Discrete):
-    """Flat Action space for NASim environment.
-
-    Inherits and implements the gym.spaces.Discrete action space
-
-    ...
-
-    Attributes
-    ----------
-    n : int
-        the number of actions in the action space
-    actions : list of Actions
-        the list of the Actions in the action space
-    """
-
-    def __init__(self, scenario, pad_to_length=None):
-        """
-        Parameters
-        ---------
-        scenario : Scenario
-            scenario description
-        """
-        self.actions = load_action_list(scenario)
-        
-        if pad_to_length is not None:
-            num_missing_actions = pad_to_length - len(self.actions)
-            if num_missing_actions > 0:
-                self.actions.extend([NoOp(cost=1.0)] * num_missing_actions)
-        
-        super().__init__(len(self.actions))
-
-    def get_action(self, action_idx):
-        """Get Action object corresponding to action idx
-
-        Parameters
-        ----------
-        action_idx : int
-            the action idx
-
-        Returns
-        -------
-        Action
-            Corresponding Action object
-        """
-        assert isinstance(action_idx, (int, np.integer)), \
-            ("When using flat action space, action must be an integer"
-             f" or an Action object. {type(action_idx)} is invalid")
-        return self.actions[action_idx]
+from nasim.envs.action import Action, ActionResult, FlatActionSpace
 
 """
 Some discussion points:
 - Why generate the action space every time?
-    Think it allows us to have the right addresses of each host for the 
-    respective actions. We also defined the action space in such a way that 
-    it generates the same, given the generation parameters. There is always
-    one exploit for every OS-service combination. There is always one privsec 
-    action for every OS-process combination.
+    It allows us to have the right addresses of each host for the respective
+    actions. We also defined the action space in such a way that it generates
+    the same, given the generation parameters. There is always one exploit for
+    every OS-service combination. There is always one privsec action for every 
+    OS-process combination.
 """
 
 class StochNASimEnv(gym.Env):
-    """This wrapper serves the purpose to create an environment that allows
-    the agent to generalize of different size networks, with hosts that have
+    """The goal of stochastic NASim is to create an environment that allows
+    the agent to generalize to different size networks, with hosts that have
     the same number of services and processes.
+
+    Everytime the environment is reset, we generate a new environment given
+    the provided arguments. The number of host can vary, and hosts will 
+    be assigned new services and processes they run.
 
     We can have up to m hosts in an environment, where each host has can choose
     between o operating systems, m services, and p processes.
@@ -636,8 +587,8 @@ if __name__ == '__main__':
     print()
     print("Action space 1:")
     print()
-    env1 = gym.make('Gen-v0', seed=12356)
-    env2 = gym.make('Gen-v0', seed=4444)
+    env1 = gym.make('StochPO-v0', seed=12356)
+    env2 = gym.make('StochPO-v0', seed=4444)
 
     env1.reset()
     env2.reset()
@@ -660,8 +611,8 @@ if __name__ == '__main__':
     np.random.seed(4444)
     random.seed(4444)
 
-    env1 = gym.make('Gen-v0')#, seed=4444)
-    env2 = gym.make('Gen-v0')#, seed=4444)
+    env1 = gym.make('StochPO-v0')#, seed=4444)
+    env2 = gym.make('StochPO-v0')#, seed=4444)
 
     print('First reset:')
     reset1, _ = env1.reset(seed=None)
