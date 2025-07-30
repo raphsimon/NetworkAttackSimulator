@@ -1,1 +1,3 @@
+from nasim.stochastic_envs.actions_padded import FlatActionSpacePadded
 from nasim.stochastic_envs.stoch_env import StochNASimEnv
+from nasim.stochastic_envs.multi_task_env import MultiTaskNASimEnv
