@@ -1,1 +1,3 @@
 from nasim.generalized_envs.generalization_env import NASimGenEnv
+from nasim.generalized_envs.multi_task_env import MultiTaskNASimEnv
+from nasim.generalized_envs.actions_padded import FlatActionSpacePadded
