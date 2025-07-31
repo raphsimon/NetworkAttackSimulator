@@ -2,7 +2,7 @@ import gymnasium as gym
 from gymnasium.envs.registration import register
 
 from nasim.envs import NASimEnv
-from nasim.generalized_envs import NASimGenEnv
+from nasim.generalized_envs import NASimGenEnv, MultiTaskNASimEnv
 from nasim.scenarios.benchmark import AVAIL_BENCHMARKS
 from nasim.scenarios import \
     make_benchmark_scenario, load_scenario, generate_scenario
@@ -232,6 +232,34 @@ for fully_obs in [True, False]:
     _register(
         id=f"{name}2D-v0",
         entry_point='nasim.generalized_envs:NASimGenEnv',
+        kwargs={
+            "fully_obs": fully_obs,
+            "flat_actions": True,
+            "flat_obs": False
+        },
+        nondeterministic=True
+    )
+
+# Regsiter MultiTaskNASimEnv
+for fully_obs in [True, False]:
+    if not fully_obs:
+        name = "MultiTaskPO"
+    else:
+        name = "MultiTask"
+    _register(
+        id=f"{name}-v0",
+        entry_point='nasim.generalized_envs:MultiTaskNASimEnv',
+        kwargs={
+            "fully_obs": fully_obs,
+            "flat_actions": True,
+            "flat_obs": True
+        },
+        nondeterministic=True
+    )
+
+    _register(
+        id=f"{name}2D-v0",
+        entry_point='nasim.generalized_envs:MultiTaskNASimEnv',
         kwargs={
             "fully_obs": fully_obs,
             "flat_actions": True,
